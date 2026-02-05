@@ -1,0 +1,98 @@
+/* Container */
+.form-container {
+  padding: 20px;
+  max-width: 450px;
+  margin: 0 auto;
+  font-family: Arial, sans-serif;
+}
+
+/* Title */
+.form-title {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* Field group */
+.field-group {
+  margin-bottom: 15px;
+}
+
+/* Labels */
+.field-label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+/* Inputs */
+.field-input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+
+/* Error text */
+.error-text {
+  color: red;
+  margin-top: 5px;
+  font-size: 0.9rem;
+}
+
+/* Button */
+.next-button {
+  margin-top: 20px;
+  padding: 12px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  font-size: 1rem;
+}
+
+/* Hover effect */
+.next-button:hover {
+  background-color: #00b345;
+}
+
+/* ----------------------------- */
+/* RESPONSIVE DESIGN */
+/* ----------------------------- */
+
+/* Small screens (phones) */
+@media (max-width: 480px) {
+  .form-container {
+    padding: 15px;
+    max-width: 95%;
+  }
+
+  .field-input {
+    padding: 8px;
+    font-size: 0.95rem;
+  }
+
+  .next-button {
+    padding: 10px;
+    font-size: 0.95rem;
+  }
+}
+
+/* Large screens (desktops) */
+@media (min-width: 900px) {
+  .form-container {
+    max-width: 600px;
+  }
+
+  .field-input {
+    padding: 12px;
+    font-size: 1.1rem;
+  }
+
+  .next-button {
+    padding: 14px;
+    font-size: 1.1rem;
+  }
+}
