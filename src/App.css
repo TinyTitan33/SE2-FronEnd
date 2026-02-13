@@ -1,48 +1,85 @@
-/* --- Global Container (Existing) --- */
+/* --- 1. CSS Variables (Theming) --- */
+:root {
+  /* Light Mode (Default) */
+  --bg-body: #ffffff;
+  --bg-card: #f9f9f9;
+  --bg-input: #ffffff;
+  --bg-success-card: #ffffff;
+  --text-main: #213547;
+  --text-muted: #666;
+  --border-color: #ccc;
+  --border-light: #eee;
+  --primary-color: #007bff;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark Mode Overrides */
+    --bg-body: #242424;
+    --bg-card: #1a1a1a;
+    --bg-input: #2a2a2a;
+    --bg-success-card: #1a1a1a;
+    --text-main: rgba(255, 255, 255, 0.87);
+    --text-muted: #a0a0a0;
+    --border-color: #444;
+    --border-light: #333;
+    --primary-color: #0a84ff;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* --- Global Container --- */
+body {
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  transition: background-color 0.3s, color 0.3s;
+  margin: 0;
+}
+
 #root {
-  max-width: 800px; /* Reduced slightly for better form readability */
+  max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
-  /* text-align: center;  <-- Removed to let forms align naturally (left) */
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
-/* --- App Header & Language Toggle --- */
+/* --- App Header --- */
 .app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .lang-toggle button {
   padding: 8px 16px;
   margin-right: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   background-color: transparent;
+  color: var(--text-main);
   cursor: pointer;
   border-radius: 4px;
-  transition: all 0.2s;
 }
 
 .lang-toggle button.active {
-  background-color: #646cff;
+  background-color: var(--primary-color);
   color: white;
-  border-color: #646cff;
+  border-color: var(--primary-color);
 }
 
 .campaign-ref {
   font-size: 0.9em;
-  color: #888;
+  color: var(--text-muted);
 }
 
 /* --- Progress Bar --- */
 .progress-container {
   width: 100%;
   height: 8px;
-  background-color: #e0e0e0;
+  background-color: var(--border-light);
   border-radius: 4px;
   margin-bottom: 2rem;
   overflow: hidden;
@@ -50,20 +87,21 @@
 
 .progress-bar {
   height: 100%;
-  background-color: #646cff; /* Matches Vite purple, or use #4caf50 for green */
+  background-color: var(--primary-color);
   transition: width 0.3s ease-in-out;
 }
 
 /* --- Form Content Wrapper --- */
 .form-content {
-  text-align: left; /* Ensures inputs align to the start */
-  background: #f9f9f9;
+  text-align: left;
+  background: var(--bg-card);
   padding: 2rem;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-light);
 }
 
-/* --- Form Fields & Layout --- */
+/* --- Form Fields --- */
 .field-group {
   margin-bottom: 1.5rem;
   display: flex;
@@ -74,26 +112,38 @@
   font-weight: 600;
   margin-bottom: 0.5rem;
   display: block;
+  color: var(--text-main);
 }
 
 .field-input {
   padding: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-input);
+  color: var(--text-main);
   border-radius: 4px;
   font-size: 1rem;
-  width: 100%; /* Full width inputs */
+  width: 100%;
   box-sizing: border-box; 
 }
 
-/* Helper text */
+select.field-input {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+                    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 20px) calc(1em + 2px),
+                       calc(100% - 15px) calc(1em + 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
 .help-text {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-muted);
   margin-top: 4px;
 }
 
 .error-text {
-  color: #e63946;
+  color: #ff6b6b;
   font-size: 0.85rem;
   margin-top: 4px;
 }
@@ -102,45 +152,108 @@
 .nav-buttons {
   display: flex;
   justify-content: space-between;
+  align-items: center; /* Ensures strict vertical centering */
   margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid #eee;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-light);
 }
 
-button {
+/* --- BUTTON FIXES --- */
+
+/* Shared strict reset */
+.back-button, .next-button {
+  height: 48px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all 0.2s ease-in-out;
   font-family: inherit;
+  
+  /* Reset browser defaults */
+  appearance: none; 
+  margin: 0; /* Crucial: removes default browser margins */
+  vertical-align: middle;
 }
 
-/* --- Success Screen --- */
+/* Back Button */
+.back-button {
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  gap: 8px; 
+}
+
+.back-button svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  display: block; /* Removes inline-block spacing issues */
+  transition: transform 0.2s;
+}
+
+.back-button:hover:not(:disabled) {
+  color: var(--text-main);
+  border-color: var(--text-muted);
+  background-color: rgba(128, 128, 128, 0.08);
+}
+
+.back-button:hover svg {
+  transform: translateX(-3px);
+}
+
+.back-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: transparent;
+}
+
+/* Next Button */
+.next-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: 1px solid transparent; 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.next-button:hover {
+  opacity: 0.9;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* --- Success Screen Card --- */
 .success-screen {
   text-align: center;
-  padding: 3rem;
-  background: #e8f5e9;
+}
+
+.success-card {
+  text-align: left; 
+  background: var(--bg-success-card); 
+  padding: 25px; 
+  margin: 20px auto; 
   border-radius: 8px;
-  color: #2e7d32;
+  max-width: 500px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-light);
 }
 
-/* --- Legacy Vite Styles (Kept as requested, but unused parts can be deleted) --- */
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.success-item {
+  display: flex; 
+  justify-content: space-between; 
+  padding: 10px 0; 
+  border-bottom: 1px solid var(--border-light);
 }
 
-@keyframes logo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.success-key {
+  color: var(--text-muted);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.success-value {
+  color: var(--text-main);
+  font-weight: 500;
 }

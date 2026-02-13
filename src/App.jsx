@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import schema from "./contract.json";
 import PageOne from "./PageOne";
 import PageTwo from "./PageTwo";
@@ -8,6 +8,7 @@ import "./App.css";
 // Centralized UI Translations
 const UI_TEXT = {
   header_id: { en: "ID", fi: "Tunniste" },
+  greeting: { en: "Dear customer, please fill this form", fi: "Hyvä asiakas, täytä tämä lomake" },
   success_title: { en: "Thank You!", fi: "Kiitos!" },
   success_msg: { en: "Your complaint has been received.", fi: "Valituksesi on vastaanotettu." },
   summary_title: { en: "Summary", fi: "Yhteenveto" },
@@ -31,6 +32,11 @@ function App() {
     setIsSubmitted(true);
   };
 
+  const handleRestart = () => {
+    setFormData({});
+    setIsSubmitted(false);
+  };
+
   return (
     <Router>
       <AppContent 
@@ -39,107 +45,82 @@ function App() {
         formData={formData} 
         onUpdate={handleUpdateData} 
         onSubmit={handleFinalSubmit}
+        onRestart={handleRestart}
         isSubmitted={isSubmitted}
       />
     </Router>
   );
 }
 
-function AppContent({ lang, setLang, formData, onUpdate, onSubmit, isSubmitted }) {
+function AppContent({ lang, setLang, formData, onUpdate, onSubmit, onRestart, isSubmitted }) {
   const location = useLocation();
+  const navigate = useNavigate();
   
-  // Sort pages securely based on order
+  // 1. Sort pages securely
   const pages = schema.pages ? [...schema.pages].sort((a, b) => a.order - b.order) : [];
 
-  // Map routes
-  const pageRoutes = pages.map(page => {
-    if (page.id === "page_identity") return "/";
-    if (page.id === "page_issue_details") return "/page2"; // Legacy support for PageOne
+  // 2. Map routes based on INDEX to ensure continuity
+  // Index 0 -> "/"
+  // Index 1 -> "/page2" (Matches PageOne hardcoded push)
+  // Index 2+ -> "/page/page_id"
+  const pageRoutes = pages.map((page, index) => {
+    if (index === 0) return "/";
+    if (index === 1) return "/page2";
     return `/page/${page.id}`;
   });
   
-  // Calculate Progress
+  // 3. Calculate Progress
   const currentPath = location.pathname;
   const currentPageIndex = pageRoutes.indexOf(currentPath);
-  const progress = currentPageIndex >= 0 
-    ? ((currentPageIndex + 1) / pages.length) * 100 
-    : 100;
+  const progress = isSubmitted 
+    ? 100 
+    : (currentPageIndex >= 0 ? ((currentPageIndex + 1) / pages.length) * 100 : 0);
 
-  // --- Success Screen Logic ---
+  // --- Success Screen ---
   if (isSubmitted) {
-    // Helper: Translate internal values (e.g. "toaster") to readable labels (e.g. "Toaster")
     const getDisplayValue = (key, value) => {
-      // 1. Find the field definition in the schema
       let fieldDef = null;
       for (const p of pages) {
         const found = p.fields.find(f => f.id === key);
-        if (found) {
-          fieldDef = found;
-          break;
-        }
+        if (found) { fieldDef = found; break; }
       }
+      if (!fieldDef) return value; 
 
-      if (!fieldDef) return value; // Fallback if field not found
-
-      // 2. Handle Booleans (Checkbox/Radio "Yes/No")
       if (typeof value === "boolean" || fieldDef.type === "checkbox") {
         return value ? UI_TEXT.yes[lang] : UI_TEXT.no[lang];
       }
 
-      // 3. Handle Options (Dropdowns/Radios)
       if (fieldDef.options) {
-        // If it's an array (MultiSelect), map all values
         if (Array.isArray(value)) {
            return value.map(v => {
              const opt = fieldDef.options.find(o => o.value === v);
              return opt ? opt.label[lang] : v;
            }).join(", ");
         }
-        // Single value
         const opt = fieldDef.options.find(o => o.value === value);
         return opt ? opt.label[lang] : value;
       }
-
       return value;
     };
 
     return (
       <div className="success-screen">
         <h1 style={{ color: '#2e7d32' }}>{UI_TEXT.success_title[lang]}</h1>
-        <p style={{ fontSize: '1.2em' }}>{UI_TEXT.success_msg[lang]}</p>
+        <p style={{ fontSize: '1.2em', color: 'var(--text-muted)' }}>{UI_TEXT.success_msg[lang]}</p>
         
-        <div style={{
-          textAlign: 'left', 
-          background: 'white', 
-          padding: '25px', 
-          margin: '20px auto', 
-          borderRadius: '8px',
-          maxWidth: '500px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-        }}>
-          <h3 style={{
-            borderBottom: '2px solid #eee', 
-            paddingBottom: '10px', 
-            marginTop: 0,
-            color: '#333'
-          }}>
+        <div className="success-card">
+          <h3 style={{ borderBottom: '2px solid var(--border-light)', paddingBottom: '10px', marginTop: 0 }}>
             {UI_TEXT.summary_title[lang]}
           </h3>
-          
           <ul style={{ listStyle: 'none', padding: 0 }}>
             {Object.entries(formData).map(([key, value]) => {
               if (value === "" || value === null || value === undefined) return null;
               return (
-                <li key={key} style={{
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  padding: '10px 0', 
-                  borderBottom: '1px solid #f9f9f9'
-                }}>
-                  <strong style={{ textTransform: 'capitalize', color: '#555', marginRight: '10px' }}>
+                <li key={key} className="success-item">
+                  <strong className="success-key" style={{ textTransform: 'capitalize', marginRight: '10px' }}>
                     {key.replace(/_/g, ' ')}:
                   </strong>
-                  <span style={{ fontWeight: '500', color: '#000', textAlign: 'right' }}>
+                  <span className="success-value" style={{ textAlign: 'right' }}>
                     {getDisplayValue(key, value)}
                   </span>
                 </li>
@@ -149,14 +130,14 @@ function AppContent({ lang, setLang, formData, onUpdate, onSubmit, isSubmitted }
         </div>
 
         <button 
-          onClick={() => window.location.reload()} 
+          onClick={() => { onRestart(); navigate("/"); }} 
           style={{
             padding: '12px 24px', 
             background: '#2e7d32', 
             color: 'white', 
             border: 'none', 
             borderRadius: '6px', 
-            cursor: 'pointer',
+            cursor: 'pointer', 
             fontSize: '1em',
             fontWeight: 'bold',
             marginTop: '10px'
@@ -181,6 +162,10 @@ function AppContent({ lang, setLang, formData, onUpdate, onSubmit, isSubmitted }
         </p>
       </header>
 
+      <h3 style={{ textAlign: 'center', margin: '0 0 20px 0', color: 'var(--text-main)' }}>
+        {UI_TEXT.greeting[lang]}
+      </h3>
+
       <div className="progress-container">
         <div className="progress-bar" style={{ width: `${progress}%` }}></div>
       </div>
@@ -193,7 +178,7 @@ function AppContent({ lang, setLang, formData, onUpdate, onSubmit, isSubmitted }
             const prevPath = index > 0 ? pageRoutes[index - 1] : null;
             const isLastPage = index === pages.length - 1;
 
-            if (page.id === "page_identity") {
+            if (index === 0) { // Always use PageOne for the first page
               return (
                 <Route
                   key={page.id}
