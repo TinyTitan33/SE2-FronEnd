@@ -18,21 +18,13 @@ const UI_LABELS = {
   submit: { en: "Submit", fi: "Lähetä" },
   min_val: { en: "Minimum value is", fi: "Minimiarvo on" },
   max_len: { en: "Too long (max)", fi: "Liian pitkä (max)" },
-  loading: { en: "Loading...", fi: "Ladataan..." }
+  loading: { en: "Loading...", fi: "Ladataan..." },
+  not_selected: { en: "Not selected", fi: "Ei valittu" }
 };
 
 const styles = {
   radioGroup: { display: "flex", gap: "15px", margin: "10px 0" },
-  checkboxGroup: { display: "flex", alignItems: "center", gap: "10px", margin: "10px 0" },
-  ratingContainer: { display: "flex", gap: "5px" },
-  ratingBtn: (active) => ({
-    padding: "8px 12px",
-    cursor: "pointer",
-    backgroundColor: active ? "var(--primary-color)" : "var(--bg-input)", 
-    color: active ? "#fff" : "var(--text-main)",
-    border: "1px solid var(--border-color)",
-    borderRadius: "4px"
-  })
+  checkboxGroup: { display: "flex", alignItems: "center", gap: "10px", margin: "10px 0" }
 };
 
 function PageTwo({ data, lang, onUpdate, existingData, nextPath, prevPath, isLastPage, onSubmit }) {
@@ -108,6 +100,124 @@ function PageTwo({ data, lang, onUpdate, existingData, nextPath, prevPath, isLas
     }
   };
 
+  // --- FIELD RENDERERS ---
+  const renderField = (field) => {
+    const val = form[field.id];
+
+    switch (field.type) {
+      case "text": case "email": case "tel":
+        return <input className="field-input" type={field.type} value={val || ""} onChange={(e) => handleChange(field.id, e.target.value)} />;
+      case "number":
+        return <input className="field-input" type="number" step={field.validation?.step || "1"} min={field.validation?.min} value={val || ""} onChange={(e) => handleChange(field.id, e.target.value)} />;
+      case "textarea":
+        return <textarea className="field-input" rows={4} maxLength={field.validation?.maxLength} value={val || ""} onChange={(e) => handleChange(field.id, e.target.value)} />;
+      case "dropdown":
+        return (
+          <select className="field-input" value={val || ""} onChange={(e) => handleChange(field.id, e.target.value)}>
+            <option value="">{UI_LABELS.select_placeholder[lang]}</option>
+            {field.options?.map(opt => <option key={opt.value} value={opt.value}>{opt.label[lang]}</option>)}
+          </select>
+        );
+      case "radio":
+        return (
+          <div style={styles.radioGroup}>
+            {field.options?.map(opt => (
+              <label key={opt.value} style={{cursor:'pointer', color: 'var(--text-main)'}}>
+                <input type="radio" name={field.id} value={opt.value} checked={val === opt.value} onChange={(e) => handleChange(field.id, e.target.value)} style={{marginRight: '5px'}} />
+                {opt.label[lang]}
+              </label>
+            ))}
+          </div>
+        );
+      case "multiSelect":
+        return (
+          <div style={{display: 'flex', flexDirection: 'column', gap: '5px'}}>
+            {field.options?.map(opt => (
+              <label key={opt.value} style={{cursor:'pointer', color: 'var(--text-main)'}}>
+                <input type="checkbox" checked={(val || []).includes(opt.value)} onChange={() => handleMultiSelect(field.id, opt.value)} style={{marginRight: '8px'}} />
+                {opt.label[lang]}
+              </label>
+            ))}
+          </div>
+        );
+      case "checkbox":
+        return (
+            <div style={styles.checkboxGroup}>
+                <input type="checkbox" id={field.id} checked={!!val} onChange={(e) => handleChange(field.id, e.target.checked)} style={{width: '20px', height: '20px'}} />
+                <span style={{color: 'var(--text-main)'}}>{field.label[lang]}</span> 
+            </div>
+        );
+      case "fileUpload":
+        return <input type="file" style={{color: 'var(--text-main)'}} onChange={(e) => handleChange(field.id, e.target.files[0] ? e.target.files[0].name : "")} />;
+      
+      // --- STAR RATING ---
+      case "rating_1_5":
+        return (
+          <div className="rating-wrapper">
+            <div className="star-container">
+              {[1, 2, 3, 4, 5].map(star => {
+                const isActive = val >= star;
+                return (
+                  <button
+                    key={star}
+                    type="button"
+                    className={`star-btn ${isActive ? 'active' : ''}`}
+                    onClick={() => handleChange(field.id, star)}
+                  >
+                    <svg viewBox="0 0 24 24">
+                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                    </svg>
+                  </button>
+                );
+              })}
+            </div>
+            <span className="selection-label">
+              {val ? `${val}/5` : ''}
+            </span>
+          </div>
+        );
+
+      // --- NPS RATING (0-3 Red, 4-7 Yellow, 8-10 Green) ---
+      case "nps_0_10":
+        return (
+          <div className="nps-wrapper">
+            <div className="nps-container">
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(score => {
+                // Determine color class based on custom logic
+                let colorClass = "detractor"; // 0-3 (Red)
+                
+                if (score >= 4 && score <= 7) {
+                    colorClass = "passive"; // 4-7 (Yellow)
+                }
+                else if (score >= 8) {
+                    colorClass = "promoter"; // 8-10 (Green)
+                }
+
+                return (
+                  <button
+                    key={score}
+                    type="button"
+                    className={`nps-btn ${colorClass} ${val === score ? 'selected' : ''}`}
+                    onClick={() => handleChange(field.id, score)}
+                  >
+                    {score}
+                  </button>
+                );
+              })}
+            </div>
+            <span className="selection-label">
+              {val !== undefined ? `${val}/10` : UI_LABELS.not_selected[lang]}
+            </span>
+          </div>
+        );
+
+      default:
+        return <p style={{color: 'red'}}>Unsupported: {field.type}</p>;
+    }
+  };
+
+  if (!data) return <div>{UI_LABELS.loading[lang]}</div>;
+
   return (
     <div className="form-container">
       <h2 style={{color: 'var(--text-main)'}}>
@@ -115,7 +225,6 @@ function PageTwo({ data, lang, onUpdate, existingData, nextPath, prevPath, isLas
       </h2>
 
       {data.fields.sort((a, b) => a.order - b.order).map(field => {
-        const val = form[field.id];
         return (
           <div key={field.id} className="field-group" style={{marginBottom: '20px'}}>
               {field.type !== "checkbox" && (
@@ -124,73 +233,7 @@ function PageTwo({ data, lang, onUpdate, existingData, nextPath, prevPath, isLas
                   </label>
               )}
 
-              {/* Inlined field rendering */}
-              {(() => {
-                switch (field.type) {
-                  case "text": case "email": case "tel":
-                    return <input className="field-input" type={field.type} value={val || ""} onChange={(e) => handleChange(field.id, e.target.value)} />;
-                  case "number":
-                    return <input className="field-input" type="number" step={field.validation?.step || "1"} min={field.validation?.min} value={val || ""} onChange={(e) => handleChange(field.id, e.target.value)} />;
-                  case "textarea":
-                    return <textarea className="field-input" rows={4} maxLength={field.validation?.maxLength} value={val || ""} onChange={(e) => handleChange(field.id, e.target.value)} />;
-                  case "dropdown":
-                    return (
-                      <select className="field-input" value={val || ""} onChange={(e) => handleChange(field.id, e.target.value)}>
-                        <option value="">{UI_LABELS.select_placeholder[lang]}</option>
-                        {field.options?.map(opt => <option key={opt.value} value={opt.value}>{opt.label[lang]}</option>)}
-                      </select>
-                    );
-                  case "radio":
-                    return (
-                      <div style={styles.radioGroup}>
-                        {field.options?.map(opt => (
-                          <label key={opt.value} style={{cursor:'pointer', color: 'var(--text-main)'}}>
-                            <input type="radio" name={field.id} value={opt.value} checked={val === opt.value} onChange={(e) => handleChange(field.id, e.target.value)} style={{marginRight: '5px'}} />
-                            {opt.label[lang]}
-                          </label>
-                        ))}
-                      </div>
-                    );
-                  case "multiSelect":
-                    return (
-                      <div style={{display: 'flex', flexDirection: 'column', gap: '5px'}}>
-                        {field.options?.map(opt => (
-                          <label key={opt.value} style={{cursor:'pointer', color: 'var(--text-main)'}}>
-                            <input type="checkbox" checked={(val || []).includes(opt.value)} onChange={() => handleMultiSelect(field.id, opt.value)} style={{marginRight: '8px'}} />
-                            {opt.label[lang]}
-                          </label>
-                        ))}
-                      </div>
-                    );
-                  case "checkbox":
-                    return (
-                        <div style={styles.checkboxGroup}>
-                            <input type="checkbox" id={field.id} checked={!!val} onChange={(e) => handleChange(field.id, e.target.checked)} style={{width: '20px', height: '20px'}} />
-                            <span style={{color: 'var(--text-main)'}}>{field.label[lang]}</span> 
-                        </div>
-                    );
-                  case "fileUpload":
-                    return <input type="file" style={{color: 'var(--text-main)'}} onChange={(e) => handleChange(field.id, e.target.files[0] ? e.target.files[0].name : "")} />;
-                  case "rating_1_5":
-                    return (
-                      <div style={styles.ratingContainer}>
-                        {[1, 2, 3, 4, 5].map(star => (
-                          <button key={star} type="button" style={styles.ratingBtn(val === star)} onClick={() => handleChange(field.id, star)}>{star}</button>
-                        ))}
-                      </div>
-                    );
-                  case "nps_0_10":
-                    return (
-                      <div style={{...styles.ratingContainer, flexWrap: 'wrap'}}>
-                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(score => (
-                          <button key={score} type="button" style={styles.ratingBtn(val === score)} onClick={() => handleChange(field.id, score)}>{score}</button>
-                        ))}
-                      </div>
-                    );
-                  default:
-                    return <p style={{color: 'red'}}>Unsupported: {field.type}</p>;
-                }
-              })()}
+              {renderField(field)}
 
               {field.helpText && <small className="help-text" style={{display:'block', marginTop:'4px'}}>{field.helpText[lang]}</small>}
               {errors[field.id] && <p className="error-text" style={{marginTop:'4px'}}>{errors[field.id]}</p>}
@@ -207,7 +250,6 @@ function PageTwo({ data, lang, onUpdate, existingData, nextPath, prevPath, isLas
             disabled={!prevPath}
             className="back-button"
         >
-          {/* SVG ICON ADDED HERE */}
           <svg viewBox="0 0 24 24">
             <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
           </svg>
