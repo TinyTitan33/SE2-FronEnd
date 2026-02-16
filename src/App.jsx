@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom";
-import schema from "./contract.json"; // Direct import
-import PageOne from "./PageOne";
-import PageTwo from "./PageTwo"; 
+import schema from "./contract.json"; 
+import DynamicPage from "./DynamicPage"; 
 import "./App.css";
 
 // Centralized UI Translations
@@ -58,13 +57,12 @@ function AppContent({ lang, setLang, formData, onUpdate, onSubmit, onRestart, is
   const location = useLocation();
   const navigate = useNavigate();
   
-  // 1. Sort pages securely based on order
+  // 1. Sort pages based on order
   const pages = schema.pages ? [...schema.pages].sort((a, b) => a.order - b.order) : [];
 
   // 2. Map routes
   const pageRoutes = pages.map((page, index) => {
     if (index === 0) return "/";
-    if (index === 1) return "/page2";
     return `/page/${page.id}`;
   });
   
@@ -72,7 +70,6 @@ function AppContent({ lang, setLang, formData, onUpdate, onSubmit, onRestart, is
   const currentPath = location.pathname;
   const currentPageIndex = pageRoutes.indexOf(currentPath);
   
-  // Step Calculation (1-based index)
   const currentStep = currentPageIndex + 1;
   const totalSteps = pages.length;
 
@@ -170,7 +167,6 @@ function AppContent({ lang, setLang, formData, onUpdate, onSubmit, onRestart, is
         {UI_TEXT.greeting[lang]}
       </h3>
 
-      {/* STEP COUNTER */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'flex-end', 
@@ -196,29 +192,12 @@ function AppContent({ lang, setLang, formData, onUpdate, onSubmit, onRestart, is
             const prevPath = index > 0 ? pageRoutes[index - 1] : null;
             const isLastPage = index === pages.length - 1;
 
-            if (index === 0) {
-              return (
-                <Route
-                  key={page.id}
-                  path="/"
-                  element={
-                    <PageOne
-                      data={page}
-                      lang={lang}
-                      onUpdate={onUpdate}
-                      existingData={formData}
-                    />
-                  }
-                />
-              );
-            }
-
             return (
               <Route
                 key={page.id}
                 path={thisPath}
                 element={
-                  <PageTwo
+                  <DynamicPage
                     data={page}
                     lang={lang}
                     onUpdate={onUpdate}

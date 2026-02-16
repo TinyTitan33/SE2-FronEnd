@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const PAGE_TITLES = {
-  page_identity: { en: "Identity", fi: "Henkilötiedot" },
+  // Overridden title for the first page to match PageOne's original text
+  page_identity: { en: "Customer Complaint Form", fi: "Asiakasvalituslomake" },
   page_issue_details: { en: "Issue Details", fi: "Ongelman tiedot" },
   page_order_info: { en: "Order Information", fi: "Tilaustiedot" },
   page_experience: { en: "Experience", fi: "Kokemus" },
@@ -19,7 +20,11 @@ const UI_LABELS = {
   min_val: { en: "Minimum value is", fi: "Minimiarvo on" },
   max_len: { en: "Too long (max)", fi: "Liian pitkä (max)" },
   loading: { en: "Loading...", fi: "Ladataan..." },
-  not_selected: { en: "Not selected", fi: "Ei valittu" }
+  not_selected: { en: "Not selected", fi: "Ei valittu" },
+  // Specific errors ported from PageOne
+  invalid_email: { en: "Invalid email format", fi: "Virheellinen sähköpostiosoite" },
+  only_letters: { en: "Only letters are allowed", fi: "Vain kirjaimet ovat sallittuja" },
+  min_chars: { en: "Must be at least 2 characters", fi: "Vähintään 2 merkkiä vaaditaan" }
 };
 
 const styles = {
@@ -27,7 +32,7 @@ const styles = {
   checkboxGroup: { display: "flex", alignItems: "center", gap: "10px", margin: "10px 0" }
 };
 
-function PageTwo({ data, lang, onUpdate, existingData, nextPath, prevPath, isLastPage, onSubmit }) {
+function DynamicPage({ data, lang, onUpdate, existingData, nextPath, prevPath, isLastPage, onSubmit }) {
   const navigate = useNavigate();
   const [form, setForm] = useState({});
   const [errors, setErrors] = useState({});
@@ -68,17 +73,37 @@ function PageTwo({ data, lang, onUpdate, existingData, nextPath, prevPath, isLas
     data.fields.forEach(field => {
       const value = form[field.id];
 
+      // 1. Standard Required Check
       if (field.required) {
         const isEmpty = value === undefined || value === "" || value === null || (Array.isArray(value) && value.length === 0);
         if (isEmpty) {
           newErrors[field.id] = UI_LABELS.required[lang];
         }
       }
+
+      // 2. PageOne Legacy Validation: Email Regex
+      if (field.type === "email" && value && !/^\S+@\S+\.\S+$/.test(value)) {
+        newErrors[field.id] = UI_LABELS.invalid_email[lang];
+      }
+
+      // 3. PageOne Legacy Validation: Name Regex (Letters only, min 2 chars)
+      if ((field.id === "first_name" || field.id === "last_name") && value) {
+        if (!/^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/.test(value)) {
+           newErrors[field.id] = UI_LABELS.only_letters[lang];
+        }
+        else if (value.trim().length < 2) {
+           newErrors[field.id] = UI_LABELS.min_chars[lang];
+        }
+      }
+
+      // 4. Numeric Limits
       if (field.type === "number" && value !== undefined && value !== "") {
          if (field.validation?.min !== undefined && Number(value) < field.validation.min) {
              newErrors[field.id] = `${UI_LABELS.min_val[lang]} ${field.validation.min}`;
          }
       }
+
+      // 5. Max Length
       if (field.validation?.maxLength && typeof value === 'string') {
           if (value.length > field.validation.maxLength) {
               newErrors[field.id] = `${UI_LABELS.max_len[lang]} ${field.validation.maxLength})`;
@@ -177,21 +202,15 @@ function PageTwo({ data, lang, onUpdate, existingData, nextPath, prevPath, isLas
           </div>
         );
 
-      // --- NPS RATING (0-3 Red, 4-7 Yellow, 8-10 Green) ---
+      // --- NPS RATING ---
       case "nps_0_10":
         return (
           <div className="nps-wrapper">
             <div className="nps-container">
               {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(score => {
-                // Determine color class based on custom logic
-                let colorClass = "detractor"; // 0-3 (Red)
-                
-                if (score >= 4 && score <= 7) {
-                    colorClass = "passive"; // 4-7 (Yellow)
-                }
-                else if (score >= 8) {
-                    colorClass = "promoter"; // 8-10 (Green)
-                }
+                let colorClass = "detractor"; 
+                if (score >= 4 && score <= 7) colorClass = "passive";
+                else if (score >= 8) colorClass = "promoter"; 
 
                 return (
                   <button
@@ -220,7 +239,7 @@ function PageTwo({ data, lang, onUpdate, existingData, nextPath, prevPath, isLas
 
   return (
     <div className="form-container">
-      <h2 style={{color: 'var(--text-main)'}}>
+      <h2 style={{color: 'var(--text-main)', marginBottom: '20px'}}>
         {PAGE_TITLES[data.id] ? PAGE_TITLES[data.id][lang] : data.id.replace('page_', '').toUpperCase()}
       </h2>
 
@@ -270,4 +289,4 @@ function PageTwo({ data, lang, onUpdate, existingData, nextPath, prevPath, isLas
   );
 }
 
-export default PageTwo;
+export default DynamicPage;
