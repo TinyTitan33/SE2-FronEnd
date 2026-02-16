@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom";
-import schema from "./contract.json";
+import schema from "./contract.json"; // Direct import
 import PageOne from "./PageOne";
-import PageTwo from "./PageTwo";
+import PageTwo from "./PageTwo"; 
 import "./App.css";
 
 // Centralized UI Translations
 const UI_TEXT = {
   header_id: { en: "ID", fi: "Tunniste" },
   greeting: { en: "Dear customer, please fill this form", fi: "Hyvä asiakas, täytä tämä lomake" },
+  step: { en: "Step", fi: "Vaihe" },
+  of: { en: "of", fi: "/" },
   success_title: { en: "Thank You!", fi: "Kiitos!" },
   success_msg: { en: "Your complaint has been received.", fi: "Valituksesi on vastaanotettu." },
   summary_title: { en: "Summary", fi: "Yhteenveto" },
@@ -56,27 +58,29 @@ function AppContent({ lang, setLang, formData, onUpdate, onSubmit, onRestart, is
   const location = useLocation();
   const navigate = useNavigate();
   
-  // 1. Sort pages securely
+  // 1. Sort pages securely based on order
   const pages = schema.pages ? [...schema.pages].sort((a, b) => a.order - b.order) : [];
 
-  // 2. Map routes based on INDEX to ensure continuity
-  // Index 0 -> "/"
-  // Index 1 -> "/page2" (Matches PageOne hardcoded push)
-  // Index 2+ -> "/page/page_id"
+  // 2. Map routes
   const pageRoutes = pages.map((page, index) => {
     if (index === 0) return "/";
     if (index === 1) return "/page2";
     return `/page/${page.id}`;
   });
   
-  // 3. Calculate Progress
+  // 3. Calculate Step Count
   const currentPath = location.pathname;
   const currentPageIndex = pageRoutes.indexOf(currentPath);
+  
+  // Step Calculation (1-based index)
+  const currentStep = currentPageIndex + 1;
+  const totalSteps = pages.length;
+
   const progress = isSubmitted 
     ? 100 
     : (currentPageIndex >= 0 ? ((currentPageIndex + 1) / pages.length) * 100 : 0);
 
-  // --- Success Screen ---
+  // --- Success Screen Logic ---
   if (isSubmitted) {
     const getDisplayValue = (key, value) => {
       let fieldDef = null;
@@ -166,6 +170,20 @@ function AppContent({ lang, setLang, formData, onUpdate, onSubmit, onRestart, is
         {UI_TEXT.greeting[lang]}
       </h3>
 
+      {/* STEP COUNTER */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'flex-end', 
+        marginBottom: '6px', 
+        fontSize: '0.9rem', 
+        color: 'var(--text-muted)', 
+        fontWeight: '500' 
+      }}>
+        <span>
+          {UI_TEXT.step[lang]} {currentStep} {UI_TEXT.of[lang]} {totalSteps}
+        </span>
+      </div>
+
       <div className="progress-container">
         <div className="progress-bar" style={{ width: `${progress}%` }}></div>
       </div>
@@ -178,7 +196,7 @@ function AppContent({ lang, setLang, formData, onUpdate, onSubmit, onRestart, is
             const prevPath = index > 0 ? pageRoutes[index - 1] : null;
             const isLastPage = index === pages.length - 1;
 
-            if (index === 0) { // Always use PageOne for the first page
+            if (index === 0) {
               return (
                 <Route
                   key={page.id}
