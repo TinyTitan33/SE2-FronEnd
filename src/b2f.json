@@ -1,0 +1,163 @@
+{
+  "campaign_db_id": 101,
+  "ui": {
+    "requiredMark": "*"
+  },
+  "products": [
+    {
+      "db_id": 501,
+      "name": {
+        "en": "Premium Widget",
+        "fi": "Premium-widgetti"
+      }
+    },
+    {
+      "db_id": 502,
+      "name": {
+        "en": "Standard Widget",
+        "fi": "Standardi-widgetti"
+      }
+    }
+  ],
+  "intro": {
+    "title": {
+      "en": "Customer Satisfaction Survey",
+      "fi": "Asiakastyytyväisyyskysely"
+    },
+    "description": {
+      "en": "Please help us improve by answering a few questions.",
+      "fi": "Auta meitä parantamaan vastaamalla muutamaan kysymykseen."
+    }
+  },
+  "pages": [
+    {
+      "order_page": 1,
+      "fields": [
+        {
+          "type": "info",
+          "order_field": 1,
+          "required": false,
+          "label": {
+            "en": "Welcome to the survey!",
+            "fi": "Tervetuloa kyselyyn!"
+          },
+          "ui": {
+            "showRequirementHint": false
+          }
+        },
+        {
+          "type": "text",
+          "order_field": 2,
+          "required": true,
+          "label": {
+            "en": "Order Number",
+            "fi": "Tilausnumero"
+          },
+          "ui": {
+            "showRequirementHint": true
+          },
+          "helpText": {
+            "en": "Found on your receipt",
+            "fi": "Löytyy kuitistasi"
+          }
+        },
+        {
+          "type": "dropdown",
+          "order_field": 3,
+          "required": true,
+          "label": {
+            "en": "Select your region",
+            "fi": "Valitse alueesi"
+          },
+          "ui": {
+            "showRequirementHint": false
+          },
+          "options": [
+            {
+              "value": "eu_north",
+              "label": {
+                "en": "Northern Europe",
+                "fi": "Pohjois-Eurooppa"
+              }
+            },
+            {
+              "value": "eu_west",
+              "label": {
+                "en": "Western Europe",
+                "fi": "Länsi-Eurooppa"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "order_page": 2,
+      "fields": [
+        {
+          "type": "rating",
+          "order_field": 1,
+          "required": true,
+          "label": {
+            "en": "How would you rate our service?",
+            "fi": "Miten arvioisit palvelumme?"
+          },
+          "ui": {
+            "showRequirementHint": false
+          }
+        },
+        {
+          "type": "nps",
+          "order_field": 2,
+          "required": false,
+          "label": {
+            "en": "How likely are you to recommend us?",
+            "fi": "Kuinka todennäköisesti suosittelisit meitä?"
+          },
+          "ui": {
+            "showRequirementHint": false
+          }
+        },
+        {
+          "type": "checkbox",
+          "order_field": 3,
+          "required": false,
+          "label": {
+            "en": "What features did you use? (Select all that apply)",
+            "fi": "Mitä ominaisuuksia käytit? (Valitse kaikki sopivat)"
+          },
+          "ui": {
+            "showRequirementHint": false
+          },
+          "options": [
+            {
+              "value": "search",
+              "label": { "en": "Search", "fi": "Haku" }
+            },
+            {
+              "value": "filter",
+              "label": { "en": "Filtering", "fi": "Suodatus" }
+            }
+          ]
+        },
+        {
+          "type": "fileUpload",
+          "order_field": 4,
+          "required": false,
+          "label": {
+            "en": "Upload a screenshot (optional)",
+            "fi": "Lataa kuvakaappaus (valinnainen)"
+          },
+          "ui": {
+            "showRequirementHint": true
+          },
+          "helpText": {
+            "en": "Max size 5MB",
+            "fi": "Maksimikoko 5MB"
+          },
+          "valid_formats": ["JPG", "PNG"]
+        }
+      ]
+    }
+  ]
+}

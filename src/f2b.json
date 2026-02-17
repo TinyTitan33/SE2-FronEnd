@@ -1,0 +1,52 @@
+{
+  "campaign_db_id": 101,
+  "fix": [
+    {
+      "ident": "first_name",
+      "question": "First Name",
+      "answer": "Matti"
+    },
+    {
+      "ident": "last_name",
+      "question": "Last Name",
+      "answer": "Meikäläinen"
+    },
+    {
+      "ident": "email",
+      "question": "Email Address",
+      "answer": "matti.meikalainen@example.com"
+    },
+    {
+      "ident": "product",
+      "question": "Purchased Product",
+      "answer": "Premium Widget"
+    }
+  ],
+  "flex": [
+    {
+      "order": 2,
+      "question": "Order Number",
+      "answer": "ORD-2023-999"
+    },
+    {
+      "order": 3,
+      "question": "Select your region",
+      "answer": "eu_north"
+    },
+    {
+      "order": 1,
+      "question": "How would you rate our service?",
+      "answer": 5
+    },
+    {
+      "order": 2,
+      "question": "How likely are you to recommend us?",
+      "answer": 9
+    },
+    {
+      "order": 3,
+      "question": "What features did you use?",
+      "answer": ["search", "filter"]
+    }
+  ]
+}

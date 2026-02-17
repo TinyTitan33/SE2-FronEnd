@@ -1,109 +1,136 @@
-import { useState } from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom";
-import schema from "./contract.json"; 
-import DynamicPage from "./DynamicPage"; 
+import { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import StaticPage from "./StaticPage";
+import DynamicPage from "./DynamicPage";
 import "./App.css";
 
-// Centralized UI Translations
 const UI_TEXT = {
-  header_id: { en: "ID", fi: "Tunniste" },
-  greeting: { en: "Dear customer, please fill this form", fi: "Hyvä asiakas, täytä tämä lomake" },
+  header_id: { en: "Campaign ID", fi: "Kampanja ID" },
   step: { en: "Step", fi: "Vaihe" },
   of: { en: "of", fi: "/" },
   success_title: { en: "Thank You!", fi: "Kiitos!" },
-  success_msg: { en: "Your complaint has been received.", fi: "Valituksesi on vastaanotettu." },
+  success_msg: { en: "Your submission has been received.", fi: "Vastauksesi on vastaanotettu." },
   summary_title: { en: "Summary", fi: "Yhteenveto" },
   restart: { en: "Submit New Complaint", fi: "Lähetä uusi valitus" },
+  loading: { en: "Loading Campaign...", fi: "Ladataan kampanjaa..." },
+  error: { en: "Error loading campaign data.", fi: "Virhe ladattaessa kampanjatietoja." },
   yes: { en: "Yes", fi: "Kyllä" },
   no: { en: "No", fi: "Ei" }
 };
 
 function App() {
-  const [lang, setLang] = useState("en");
-  const [formData, setFormData] = useState({});
-  const [isSubmitted, setIsSubmitted] = useState(false);
-
-  const handleUpdateData = (newData) => {
-    setFormData((prev) => ({ ...prev, ...newData }));
-  };
-
-  const handleFinalSubmit = (finalData) => {
-    const completePayload = { ...formData, ...finalData };
-    console.log("Submitting:", completePayload);
-    setIsSubmitted(true);
-  };
-
-  const handleRestart = () => {
-    setFormData({});
-    setIsSubmitted(false);
-  };
-
   return (
     <Router>
-      <AppContent 
-        lang={lang} 
-        setLang={setLang} 
-        formData={formData} 
-        onUpdate={handleUpdateData} 
-        onSubmit={handleFinalSubmit}
-        onRestart={handleRestart}
-        isSubmitted={isSubmitted}
-      />
+      <AppContent />
     </Router>
   );
 }
 
-function AppContent({ lang, setLang, formData, onUpdate, onSubmit, onRestart, isSubmitted }) {
+function AppContent() {
+  const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
-  
-  // 1. Sort pages based on order
-  const pages = schema.pages ? [...schema.pages].sort((a, b) => a.order - b.order) : [];
 
-  // 2. Map routes
-  const pageRoutes = pages.map((page, index) => {
-    if (index === 0) return "/";
-    return `/page/${page.id}`;
-  });
-  
-  // 3. Calculate Step Count
-  const currentPath = location.pathname;
-  const currentPageIndex = pageRoutes.indexOf(currentPath);
-  
-  const currentStep = currentPageIndex + 1;
-  const totalSteps = pages.length;
+  const [b2fData, setB2fData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [lang, setLang] = useState("en");
+  const [formData, setFormData] = useState({});
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const progress = isSubmitted 
-    ? 100 
-    : (currentPageIndex >= 0 ? ((currentPageIndex + 1) / pages.length) * 100 : 0);
+  // 1. Fetch Campaign Schema
+  useEffect(() => {
+    const campaignId = searchParams.get("campaignId") || "14"; 
+    const apiUrl = `http://10.150.0.101:5678/webhook/form-schema?campaignId=${campaignId}`;
 
-  // --- Success Screen Logic ---
-  if (isSubmitted) {
-    const getDisplayValue = (key, value) => {
-      let fieldDef = null;
-      for (const p of pages) {
-        const found = p.fields.find(f => f.id === key);
-        if (found) { fieldDef = found; break; }
-      }
-      if (!fieldDef) return value; 
+    setLoading(true);
+    fetch(apiUrl)
+      .then((res) => res.json())
+      .then((data) => {
+        setB2fData(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Fetch error:", err);
+        setLoading(false);
+      });
+  }, [searchParams]);
 
-      if (typeof value === "boolean" || fieldDef.type === "checkbox") {
-        return value ? UI_TEXT.yes[lang] : UI_TEXT.no[lang];
-      }
+  // 2. Routing and Step Calculation
+  const dynamicPages = b2fData?.pages 
+    ? [...b2fData.pages].sort((a, b) => a.order_page - b.order_page) 
+    : [];
 
-      if (fieldDef.options) {
-        if (Array.isArray(value)) {
-           return value.map(v => {
-             const opt = fieldDef.options.find(o => o.value === v);
-             return opt ? opt.label[lang] : v;
-           }).join(", ");
-        }
-        const opt = fieldDef.options.find(o => o.value === value);
-        return opt ? opt.label[lang] : value;
-      }
-      return value;
+  const allRoutePaths = ["/", ...dynamicPages.map(p => `/page/${p.order_page}`)];
+  const currentIndex = allRoutePaths.indexOf(location.pathname);
+  const currentStep = currentIndex + 1;
+  const totalSteps = allRoutePaths.length;
+  const progress = isSubmitted ? 100 : (currentIndex >= 0 ? (currentStep / totalSteps) * 100 : 0);
+
+  const handleUpdateData = (newData) => setFormData((prev) => ({ ...prev, ...newData }));
+
+  const handleRestart = () => {
+    setFormData({});
+    setIsSubmitted(false);
+    navigate("/");
+  };
+
+  // 3. F2B Payload Construction
+  const handleFinalSubmit = (lastPageData) => {
+    const completeData = { ...formData, ...lastPageData };
+    const payload = {
+      campaign_db_id: b2fData.campaign_db_id,
+      fix: [
+        { ident: "first_name", question: "First Name", answer: completeData.first_name },
+        { ident: "last_name", question: "Last Name", answer: completeData.last_name },
+        { ident: "email", question: "Email Address", answer: completeData.email },
+        { ident: "product", question: "Purchased Product", answer: completeData.product }
+      ],
+      flex: []
     };
 
+    dynamicPages.forEach(page => {
+      [...page.fields].sort((a, b) => a.order_field - b.order_field).forEach(field => {
+        if (field.type === "info") return;
+        const key = `p${page.order_page}_f${field.order_field}`;
+        if (completeData[key] !== undefined) {
+          payload.flex.push({
+            order: field.order_field,
+            question: field.label["en"],
+            answer: completeData[key]
+          });
+        }
+      });
+    });
+
+    console.log("F2B Payload:", payload);
+    setIsSubmitted(true);
+  };
+
+  // Helper for Summary Table Display
+  const getFieldDisplay = (key, value) => {
+    if (typeof value === "boolean") return value ? UI_TEXT.yes[lang] : UI_TEXT.no[lang];
+    if (Array.isArray(value)) return value.join(", ");
+    
+    let label = key;
+    dynamicPages.forEach(page => {
+      const field = page.fields.find(f => `p${page.order_page}_f${f.order_field}` === key);
+      if (field) label = field.label[lang];
+    });
+    return { label, value };
+  };
+
+  if (loading) return (
+    <div className="app-container">
+      <div className="form-content spinner-container">
+        <div className="spinner"></div>
+        <p className="loading-text">{UI_TEXT.loading[lang]}</p>
+      </div>
+    </div>
+  );
+
+  if (!b2fData) return <div className="app-container"><div className="form-content">{UI_TEXT.error[lang]}</div></div>;
+
+  if (isSubmitted) {
     return (
       <div className="success-screen">
         <h1 style={{ color: '#2e7d32' }}>{UI_TEXT.success_title[lang]}</h1>
@@ -114,43 +141,32 @@ function AppContent({ lang, setLang, formData, onUpdate, onSubmit, onRestart, is
             {UI_TEXT.summary_title[lang]}
           </h3>
           <ul style={{ listStyle: 'none', padding: 0 }}>
-            {Object.entries(formData).map(([key, value]) => {
-              if (value === "" || value === null || value === undefined) return null;
+            {/* Fixed Fields */}
+            {["first_name", "last_name", "email", "product"].map(k => (
+              formData[k] && (
+                <li key={k} className="success-item">
+                  <strong className="success-key" style={{ textTransform: 'capitalize' }}>{k.replace('_', ' ')}:</strong>
+                  <span className="success-value">{formData[k]}</span>
+                </li>
+              )
+            ))}
+            {/* Dynamic Fields */}
+            {Object.keys(formData).filter(k => k.startsWith('p')).map(key => {
+              const display = getFieldDisplay(key, formData[key]);
               return (
                 <li key={key} className="success-item">
-                  <strong className="success-key" style={{ textTransform: 'capitalize', marginRight: '10px' }}>
-                    {key.replace(/_/g, ' ')}:
-                  </strong>
-                  <span className="success-value" style={{ textAlign: 'right' }}>
-                    {getDisplayValue(key, value)}
-                  </span>
+                  <strong className="success-key">{display.label || key}:</strong>
+                  <span className="success-value">{String(display.value || display)}</span>
                 </li>
               );
             })}
           </ul>
         </div>
-
-        <button 
-          onClick={() => { onRestart(); navigate("/"); }} 
-          style={{
-            padding: '12px 24px', 
-            background: '#2e7d32', 
-            color: 'white', 
-            border: 'none', 
-            borderRadius: '6px', 
-            cursor: 'pointer', 
-            fontSize: '1em',
-            fontWeight: 'bold',
-            marginTop: '10px'
-          }}
-        >
-          {UI_TEXT.restart[lang]}
-        </button>
+        <button onClick={handleRestart} className="next-button" style={{margin: '20px auto', display: 'block'}}>{UI_TEXT.restart[lang]}</button>
       </div>
     );
   }
 
-  // --- Main Form Render ---
   return (
     <div className="app-container">
       <header className="app-header">
@@ -158,26 +174,18 @@ function AppContent({ lang, setLang, formData, onUpdate, onSubmit, onRestart, is
           <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>EN</button>
           <button className={lang === "fi" ? "active" : ""} onClick={() => setLang("fi")}>FI</button>
         </div>
-        <p className="campaign-ref">
-            {UI_TEXT.header_id[lang]}: {schema.campaignId}
-        </p>
+        <p className="campaign-ref">{UI_TEXT.header_id[lang]}: {b2fData.campaign_db_id}</p>
       </header>
 
-      <h3 style={{ textAlign: 'center', margin: '0 0 20px 0', color: 'var(--text-main)' }}>
-        {UI_TEXT.greeting[lang]}
-      </h3>
+      {currentIndex === 0 && b2fData.intro && (
+          <div style={{ textAlign: 'center', margin: '0 0 20px 0' }}>
+            <h3 style={{ color: 'var(--text-main)', margin: '0' }}>{b2fData.intro.title[lang]}</h3>
+            <p style={{ color: 'var(--text-muted)' }}>{b2fData.intro.description[lang]}</p>
+          </div>
+      )}
 
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'flex-end', 
-        marginBottom: '6px', 
-        fontSize: '0.9rem', 
-        color: 'var(--text-muted)', 
-        fontWeight: '500' 
-      }}>
-        <span>
-          {UI_TEXT.step[lang]} {currentStep} {UI_TEXT.of[lang]} {totalSteps}
-        </span>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '6px', fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '500' }}>
+        <span>{UI_TEXT.step[lang]} {currentStep} {UI_TEXT.of[lang]} {totalSteps}</span>
       </div>
 
       <div className="progress-container">
@@ -186,31 +194,21 @@ function AppContent({ lang, setLang, formData, onUpdate, onSubmit, onRestart, is
 
       <main className="form-content">
         <Routes>
-          {pages.map((page, index) => {
-            const thisPath = pageRoutes[index];
-            const nextPath = index < pages.length - 1 ? pageRoutes[index + 1] : null;
-            const prevPath = index > 0 ? pageRoutes[index - 1] : null;
-            const isLastPage = index === pages.length - 1;
-
-            return (
-              <Route
-                key={page.id}
-                path={thisPath}
-                element={
-                  <DynamicPage
-                    data={page}
-                    lang={lang}
-                    onUpdate={onUpdate}
-                    existingData={formData}
-                    nextPath={nextPath}
-                    prevPath={prevPath}
-                    isLastPage={isLastPage}
-                    onSubmit={onSubmit}
-                  />
-                }
+          <Route path="/" element={<StaticPage products={b2fData.products} lang={lang} onUpdate={handleUpdateData} existingData={formData} nextPath={allRoutePaths[1]} />} />
+          {dynamicPages.map((page, index) => (
+            <Route key={page.order_page} path={`/page/${page.order_page}`} element={
+              <DynamicPage
+                pageData={page}
+                lang={lang}
+                onUpdate={handleUpdateData}
+                existingData={formData}
+                nextPath={allRoutePaths[index + 2] || null}
+                prevPath={allRoutePaths[index]}
+                isLastPage={index === dynamicPages.length - 1}
+                onSubmit={handleFinalSubmit}
               />
-            );
-          })}
+            } />
+          ))}
         </Routes>
       </main>
     </div>
