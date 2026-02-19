@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, useSe
 import StaticPage from "./StaticPage";
 import DynamicPage from "./DynamicPage";
 import "./App.css";
+import VerifyCode from "./VerifyCode";
 import localB2fData from "./b2f.json";
 
 const UI_TEXT = {
@@ -13,6 +14,7 @@ const UI_TEXT = {
   success_msg: { en: "Your submission has been received.", fi: "Vastauksesi on vastaanotettu." },
   summary_title: { en: "Summary", fi: "Yhteenveto" },
   restart: { en: "Submit New Complaint", fi: "Lähetä uusi valitus" },
+  download_json: { en: "Download Again", fi: "Lataa Uudelleen" },
   loading: { en: "Loading Campaign...", fi: "Ladataan kampanjaa..." },
   error: { en: "Error loading campaign data.", fi: "Virhe ladattaessa kampanjatietoja." },
   yes: { en: "Yes", fi: "Kyllä" },
@@ -37,13 +39,13 @@ function AppContent() {
   const [lang, setLang] = useState("en");
   const [formData, setFormData] = useState({});
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [finalPayload, setFinalPayload] = useState(null); 
 
   // 1. Load campaign schema from local JSON
   useEffect(() => {
     setLoading(true);
 
-    // I added a 600ms fake delay so your audience can actually see 
-    // your nice loading spinner during the presentation!
+    // Fake delay for presentation loading spinner
     setTimeout(() => {
       setB2fData(localB2fData);
       setLoading(false);
@@ -69,24 +71,23 @@ function AppContent() {
   const handleRestart = () => {
     setFormData({});
     setIsSubmitted(false);
+    setFinalPayload(null);
     navigate("/");
   };
 
-  // 3. Final payload construction (Updated for NEW F2B Flat Structure)
+  // 3. Final payload construction & AUTOMATIC DOWNLOAD
   const handleFinalSubmit = (lastPageData) => {
     const completeData = { ...formData, ...lastPageData };
 
-    // Find the product ID from the selected product name
     const selectedProduct = b2fData.products.find((p) => p.name.en === completeData.product) || {};
     const productId = selectedProduct.db_id || null;
 
-    // Build the base F2B payload with flattened root properties
     const payload = {
       campaign_db_id: b2fData.campaign_db_id,
       first_name: completeData.first_name,
       last_name: completeData.last_name,
       email: completeData.email,
-      email_verified: true, // Hardcoded as true assuming standard flow
+      email_verified: true, 
       product_name: completeData.product,
       product_id: productId,
       flex: []
@@ -94,26 +95,23 @@ function AppContent() {
 
     let npsData = null;
 
-    // Loop through dynamic pages and sort fields
     dynamicPages.forEach((page) => {
       [...page.fields]
         .sort((a, b) => a.order_field - b.order_field)
         .forEach((field) => {
-          if (field.type === "info") return; // Ignore info blocks
+          if (field.type === "info") return; 
           
           const key = `p${page.order_page}_f${field.order_field}`;
           
           if (completeData[key] !== undefined) {
-            // Check if this field is the NPS question
             if (field.type === "nps") {
               npsData = {
-                nps_question: field.label["en"], // F2B Requires English Label
+                nps_question: field.label["en"], 
                 nps_value: completeData[key],
                 nps_max: 10,
                 nps_min: 0
               };
             } else {
-              // Push all other standard fields into flex
               payload.flex.push({
                 order: field.order_field,
                 question: field.label["en"],
@@ -124,21 +122,49 @@ function AppContent() {
         });
     });
 
-    // If NPS data was found, attach it to the root of the F2B payload
     if (npsData) {
       Object.assign(payload, npsData);
     }
 
     console.log("F2B Payload:", JSON.stringify(payload, null, 2));
+    
+    // Save to state so the manual fallback button works
+    setFinalPayload(payload); 
+    
+    // --- TRIGGER AUTOMATIC DOWNLOAD ---
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `f2b_payload_campaign_${b2fData.campaign_db_id}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    // ----------------------------------
+
+    // Show the success screen
     setIsSubmitted(true);
+  };
+
+  // Manual fallback download function
+  const handleDownloadJson = () => {
+    if (!finalPayload) return;
+    const blob = new Blob([JSON.stringify(finalPayload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `f2b_payload_campaign_${b2fData.campaign_db_id}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Helper for summary display on success screen
   const getFieldDisplay = (key, value) => {
-    if (typeof value === "boolean") return value ? UI_TEXT.yes[lang] : UI_TEXT.no[lang];
-    if (Array.isArray(value)) return value.join(", ");
-
     let label = key;
+    
     dynamicPages.forEach((page) => {
       const field = page.fields.find(
         (f) => `p${page.order_page}_f${f.order_field}` === key
@@ -146,7 +172,14 @@ function AppContent() {
       if (field) label = field.label[lang];
     });
 
-    return { label, value };
+    let displayValue = value;
+    if (typeof value === "boolean") {
+      displayValue = value ? UI_TEXT.yes[lang] : UI_TEXT.no[lang];
+    } else if (Array.isArray(value)) {
+      displayValue = value.length > 0 ? value.join(", ") : "-";
+    }
+
+    return { label, value: displayValue };
   };
 
   // Loading state
@@ -205,7 +238,15 @@ function AppContent() {
             )}
 
             {Object.keys(formData)
-              .filter((k) => k.startsWith("p"))
+              .filter((k) => k.match(/^p\d+_f\d+$/))
+              .filter((key) => {
+                let isInfo = false;
+                dynamicPages.forEach((page) => {
+                  const field = page.fields.find((f) => `p${page.order_page}_f${f.order_field}` === key);
+                  if (field && field.type === "info") isInfo = true;
+                });
+                return !isInfo;
+              })
               .map((key) => {
                 const display = getFieldDisplay(key, formData[key]);
                 return (
@@ -220,13 +261,14 @@ function AppContent() {
           </ul>
         </div>
 
-        <button
-          onClick={handleRestart}
-          className="next-button"
-          style={{ margin: "20px auto", display: "block" }}
-        >
-          {UI_TEXT.restart[lang]}
-        </button>
+        <div style={{ display: "flex", justifyContent: "center", gap: "15px", margin: "30px auto" }}>
+          <button onClick={handleDownloadJson} className="next-button">
+            {UI_TEXT.download_json[lang]}
+          </button>
+          <button onClick={handleRestart} className="back-button">
+            {UI_TEXT.restart[lang]}
+          </button>
+        </div>
       </div>
     );
   }
@@ -289,6 +331,7 @@ function AppContent() {
       </div>
 
       <main className="form-content">
+        
         <Routes>
           <Route
             path="/"

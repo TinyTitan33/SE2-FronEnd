@@ -126,7 +126,7 @@ function DynamicPage({ pageData, lang, onUpdate, existingData, nextPath, prevPat
           <div className="nps-wrapper">
             <div className="nps-container">
               {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(score => (
-                <button key={score} type="button" className={`nps-btn ${score >= 7 ? "promoter" : score >= 4 ? "passive" : "detractor"} ${val === score ? 'selected' : ''}`} onClick={() => handleChange(key, score)}>
+                <button key={score} type="button" className={`nps-btn ${score >= 7 ? "promoter" : score >= 3 ? "passive" : "detractor"} ${val === score ? 'selected' : ''}`} onClick={() => handleChange(key, score)}>
                   {score}
                 </button>
               ))}
@@ -145,7 +145,11 @@ function DynamicPage({ pageData, lang, onUpdate, existingData, nextPath, prevPat
         const key = getFieldKey(field);
         return (
           <div key={key} className="field-group">
-            {field.type !== "info" && field.type !== "checkbox" && <label className="field-label">{field.label[lang]} {field.required ? "*" : ""}</label>}
+            {field.type !== "info" && !(field.type === "checkbox" && !field.options) && (
+  <label className="field-label">
+    {field.label[lang]} {field.required ? "*" : ""}
+  </label>
+)}
             {field.type === "info" && <p style={{ color: 'var(--text-main)', marginBottom: '10px' }}>{field.label[lang]}</p>}
             {renderField(field)}
             {field.helpText && <small className="help-text">{field.helpText[lang]}</small>}
