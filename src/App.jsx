@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, useSe
 import StaticPage from "./StaticPage";
 import DynamicPage from "./DynamicPage";
 import "./App.css";
-import VerifyCode from "./VerifyCode";
 import localB2fData from "./b2f.json";
 
 const UI_TEXT = {
@@ -41,19 +40,14 @@ function AppContent() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [finalPayload, setFinalPayload] = useState(null); 
 
-  // 1. Load campaign schema from local JSON
   useEffect(() => {
     setLoading(true);
-
-    // Fake delay for presentation loading spinner
     setTimeout(() => {
       setB2fData(localB2fData);
       setLoading(false);
     }, 600); 
-
   }, [searchParams]);
 
-  // 2. Routing and step calculation
   const dynamicPages = b2fData?.pages
     ? [...b2fData.pages].sort((a, b) => a.order_page - b.order_page)
     : [];
@@ -67,7 +61,6 @@ function AppContent() {
   const handleUpdateData = (newData) =>
     setFormData((prev) => ({ ...prev, ...newData }));
 
-  // Clean restart handler
   const handleRestart = () => {
     setFormData({});
     setIsSubmitted(false);
@@ -75,7 +68,6 @@ function AppContent() {
     navigate("/");
   };
 
-  // 3. Final payload construction & AUTOMATIC DOWNLOAD
   const handleFinalSubmit = (lastPageData) => {
     const completeData = { ...formData, ...lastPageData };
 
@@ -112,10 +104,16 @@ function AppContent() {
                 nps_min: 0
               };
             } else {
+              // Ensure numeric inputs are cast to actual numbers, not strings
+              let finalAnswer = completeData[key];
+              if (field.type === "number" && finalAnswer !== "" && finalAnswer !== undefined) {
+                finalAnswer = Number(finalAnswer);
+              }
+
               payload.flex.push({
                 order: field.order_field,
                 question: field.label["en"],
-                answer: completeData[key]
+                answer: finalAnswer
               });
             }
           }
@@ -128,10 +126,8 @@ function AppContent() {
 
     console.log("F2B Payload:", JSON.stringify(payload, null, 2));
     
-    // Save to state so the manual fallback button works
     setFinalPayload(payload); 
     
-    // --- TRIGGER AUTOMATIC DOWNLOAD ---
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -141,13 +137,10 @@ function AppContent() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    // ----------------------------------
 
-    // Show the success screen
     setIsSubmitted(true);
   };
 
-  // Manual fallback download function
   const handleDownloadJson = () => {
     if (!finalPayload) return;
     const blob = new Blob([JSON.stringify(finalPayload, null, 2)], { type: "application/json" });
@@ -161,7 +154,6 @@ function AppContent() {
     URL.revokeObjectURL(url);
   };
 
-  // Helper for summary display on success screen
   const getFieldDisplay = (key, value) => {
     let label = key;
     
@@ -182,7 +174,6 @@ function AppContent() {
     return { label, value: displayValue };
   };
 
-  // Loading state
   if (loading)
     return (
       <div className="app-container">
@@ -193,7 +184,6 @@ function AppContent() {
       </div>
     );
 
-  // Error state
   if (!b2fData)
     return (
       <div className="app-container">
@@ -201,7 +191,6 @@ function AppContent() {
       </div>
     );
 
-  // Success screen
   if (isSubmitted) {
     return (
       <div className="success-screen">
@@ -273,7 +262,6 @@ function AppContent() {
     );
   }
 
-  // Main form UI
   return (
     <div className="app-container">
       <header className="app-header">
@@ -331,7 +319,6 @@ function AppContent() {
       </div>
 
       <main className="form-content">
-        
         <Routes>
           <Route
             path="/"
