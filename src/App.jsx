@@ -4,6 +4,7 @@ import StaticPage from "./StaticPage";
 import DynamicPage from "./DynamicPage";
 import "./App.css";
 import localB2fData from "./b2f.json";
+
 const UI_TEXT = {
   header_id: { en: "Campaign ID", fi: "Kampanja ID" },
   step: { en: "Step", fi: "Vaihe" },
@@ -37,10 +38,8 @@ function AppContent() {
   const [formData, setFormData] = useState({});
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  // 1. Fetch campaign schema (safe version with res.ok)
+  // 1. Load campaign schema from local JSON
   useEffect(() => {
-// 1. Load campaign schema from local JSON
-  
     setLoading(true);
 
     // I added a 600ms fake delay so your audience can actually see 
@@ -50,27 +49,6 @@ function AppContent() {
       setLoading(false);
     }, 600); 
 
-    // Note: If you want it to load instantly with no spinner, 
-    // delete the setTimeout wrapper and just use:
-    // setB2fData(localB2fData);
-    // setLoading(false);
-
-   // const campaignId = searchParams.get("campaignId") || "14";
-    // const apiUrl = `/b2fData.json`;
-    // setLoading(true);
-    // fetch(apiUrl)
-    //   .then((res) => {
-    //     if (!res.ok) throw new Error("Fetch failed");
-    //     return res.json();
-    //   })
-    //   .then((data) => {
-    //     setB2fData(data);
-    //     setLoading(false);
-    //   })
-    //   .catch((err) => {
-    //     console.error("Fetch error:", err);
-    //     setLoading(false);
-    //   });
   }, [searchParams]);
 
   // 2. Routing and step calculation
@@ -87,49 +65,75 @@ function AppContent() {
   const handleUpdateData = (newData) =>
     setFormData((prev) => ({ ...prev, ...newData }));
 
-  // Clean restart handler (from Version 1)
+  // Clean restart handler
   const handleRestart = () => {
     setFormData({});
     setIsSubmitted(false);
     navigate("/");
   };
 
-  // 3. Final payload construction (merged version)
+  // 3. Final payload construction (Updated for NEW F2B Flat Structure)
   const handleFinalSubmit = (lastPageData) => {
     const completeData = { ...formData, ...lastPageData };
 
+    // Find the product ID from the selected product name
+    const selectedProduct = b2fData.products.find((p) => p.name.en === completeData.product) || {};
+    const productId = selectedProduct.db_id || null;
+
+    // Build the base F2B payload with flattened root properties
     const payload = {
       campaign_db_id: b2fData.campaign_db_id,
-      fix: [
-        { ident: "first_name", question: "First Name", answer: completeData.first_name },
-        { ident: "last_name", question: "Last Name", answer: completeData.last_name },
-        { ident: "email", question: "Email Address", answer: completeData.email },
-        { ident: "product", question: "Purchased Product", answer: completeData.product }
-      ],
+      first_name: completeData.first_name,
+      last_name: completeData.last_name,
+      email: completeData.email,
+      email_verified: true, // Hardcoded as true assuming standard flow
+      product_name: completeData.product,
+      product_id: productId,
       flex: []
     };
 
+    let npsData = null;
+
+    // Loop through dynamic pages and sort fields
     dynamicPages.forEach((page) => {
       [...page.fields]
         .sort((a, b) => a.order_field - b.order_field)
         .forEach((field) => {
-          if (field.type === "info") return;
+          if (field.type === "info") return; // Ignore info blocks
+          
           const key = `p${page.order_page}_f${field.order_field}`;
+          
           if (completeData[key] !== undefined) {
-            payload.flex.push({
-              order: field.order_field,
-              question: field.label["en"],
-              answer: completeData[key]
-            });
+            // Check if this field is the NPS question
+            if (field.type === "nps") {
+              npsData = {
+                nps_question: field.label["en"], // F2B Requires English Label
+                nps_value: completeData[key],
+                nps_max: 10,
+                nps_min: 0
+              };
+            } else {
+              // Push all other standard fields into flex
+              payload.flex.push({
+                order: field.order_field,
+                question: field.label["en"],
+                answer: completeData[key]
+              });
+            }
           }
         });
     });
 
-    console.log("F2B Payload:", payload);
+    // If NPS data was found, attach it to the root of the F2B payload
+    if (npsData) {
+      Object.assign(payload, npsData);
+    }
+
+    console.log("F2B Payload:", JSON.stringify(payload, null, 2));
     setIsSubmitted(true);
   };
 
-  // Helper for summary display
+  // Helper for summary display on success screen
   const getFieldDisplay = (key, value) => {
     if (typeof value === "boolean") return value ? UI_TEXT.yes[lang] : UI_TEXT.no[lang];
     if (Array.isArray(value)) return value.join(", ");

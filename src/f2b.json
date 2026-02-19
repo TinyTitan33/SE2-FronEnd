@@ -1,27 +1,15 @@
 {
   "campaign_db_id": 101,
-  "fix": [
-    {
-      "ident": "first_name",
-      "question": "First Name",
-      "answer": "Matti"
-    },
-    {
-      "ident": "last_name",
-      "question": "Last Name",
-      "answer": "Meikäläinen"
-    },
-    {
-      "ident": "email",
-      "question": "Email Address",
-      "answer": "matti.meikalainen@example.com"
-    },
-    {
-      "ident": "product",
-      "question": "Purchased Product",
-      "answer": "Premium Widget"
-    }
-  ],
+  "first_name": "Matti",
+  "last_name": "Meikäläinen",
+  "email": "matti.meikalainen@example.com",
+  "email_verified": true,
+  "product_name": "Premium Widget",
+  "product_id": 501,
+  "nps_question": "How likely are you to recommend us?",
+  "nps_value": 9,
+  "nps_max": 10,
+  "nps_min": 0,
   "flex": [
     {
       "order": 2,
@@ -39,14 +27,24 @@
       "answer": 5
     },
     {
-      "order": 2,
-      "question": "How likely are you to recommend us?",
-      "answer": 9
+      "order": 3,
+      "question": "How did you hear about us?",
+      "answer": "social"
     },
     {
-      "order": 3,
-      "question": "What features did you use?",
+      "order": 4,
+      "question": "Your age",
+      "answer": 35
+    },
+    {
+      "order": 1,
+      "question": "What features did you use? (Select all that apply)",
       "answer": ["search", "filter"]
+    },
+    {
+      "order": 2,
+      "question": "Any additional feedback?",
+      "answer": "Great app overall!"
     }
   ]
 }

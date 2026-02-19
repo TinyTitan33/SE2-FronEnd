@@ -38,8 +38,8 @@
           "order_field": 1,
           "required": false,
           "label": {
-            "en": "Welcome to the survey!",
-            "fi": "Tervetuloa kyselyyn!"
+            "en": "Welcome to the survey! Your feedback is highly appreciated.",
+            "fi": "Tervetuloa kyselyyn! Palautteesi on erittäin arvostettua."
           },
           "ui": {
             "showRequirementHint": false
@@ -75,17 +75,11 @@
           "options": [
             {
               "value": "eu_north",
-              "label": {
-                "en": "Northern Europe",
-                "fi": "Pohjois-Eurooppa"
-              }
+              "label": { "en": "Northern Europe", "fi": "Pohjois-Eurooppa" }
             },
             {
               "value": "eu_west",
-              "label": {
-                "en": "Western Europe",
-                "fi": "Länsi-Eurooppa"
-              }
+              "label": { "en": "Western Europe", "fi": "Länsi-Eurooppa" }
             }
           ]
         }
@@ -119,8 +113,54 @@
           }
         },
         {
-          "type": "checkbox",
+          "type": "radio",
           "order_field": 3,
+          "required": true,
+          "label": {
+            "en": "How did you hear about us?",
+            "fi": "Mistä kuulit meistä?"
+          },
+          "ui": {
+            "showRequirementHint": false
+          },
+          "options": [
+            {
+              "value": "social",
+              "label": { "en": "Social Media", "fi": "Sosiaalinen media" }
+            },
+            {
+              "value": "friend",
+              "label": { "en": "From a friend", "fi": "Kaverilta" }
+            }
+          ]
+        },
+        {
+          "type": "number",
+          "order_field": 4,
+          "required": false,
+          "label": {
+            "en": "Your age",
+            "fi": "Ikäsi"
+          },
+          "ui": {
+            "showRequirementHint": true
+          },
+          "helpText": {
+            "en": "Must be between 18 and 100",
+            "fi": "Täytyy olla 18-100 välillä"
+          },
+          "min": 18,
+          "max": 100,
+          "step": 1
+        }
+      ]
+    },
+    {
+      "order_page": 3,
+      "fields": [
+        {
+          "type": "checkbox",
+          "order_field": 1,
           "required": false,
           "label": {
             "en": "What features did you use? (Select all that apply)",
@@ -141,8 +181,20 @@
           ]
         },
         {
+          "type": "textarea",
+          "order_field": 2,
+          "required": false,
+          "label": {
+            "en": "Any additional feedback?",
+            "fi": "Muuta palautetta?"
+          },
+          "ui": {
+            "showRequirementHint": false
+          }
+        },
+        {
           "type": "fileUpload",
-          "order_field": 4,
+          "order_field": 3,
           "required": false,
           "label": {
             "en": "Upload a screenshot (optional)",
@@ -152,8 +204,8 @@
             "showRequirementHint": true
           },
           "helpText": {
-            "en": "Max size 5MB",
-            "fi": "Maksimikoko 5MB"
+            "en": "Max size 5MB. Valid formats: JPG, PNG",
+            "fi": "Maksimikoko 5MB. Sallitut formaatit: JPG, PNG"
           },
           "valid_formats": ["JPG", "PNG"]
         }

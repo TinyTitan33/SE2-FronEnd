@@ -42,17 +42,16 @@ function DynamicPage({ pageData, lang, onUpdate, existingData, nextPath, prevPat
       const value = form[key];
 
       if (field.required) {
-        // Confirmation checkbox must be true
         const isEmpty = (field.type === 'checkbox' && !field.options) ? value !== true : !value || (Array.isArray(value) && value.length === 0);
         if (isEmpty) {
-          newErrors[key] = UI_LABELS.required[lang];
+          // Store the KEY of the error
+          newErrors[key] = "required";
           return;
         }
       }
 
-      // Minimum 3 chars for required text fields
       if (field.required && (field.type === "text" || field.type === "textarea") && String(value).trim().length < 3) {
-        newErrors[key] = UI_LABELS.too_short[lang];
+        newErrors[key] = "too_short";
       }
     });
     setErrors(newErrors);
@@ -150,7 +149,8 @@ function DynamicPage({ pageData, lang, onUpdate, existingData, nextPath, prevPat
             {field.type === "info" && <p style={{ color: 'var(--text-main)', marginBottom: '10px' }}>{field.label[lang]}</p>}
             {renderField(field)}
             {field.helpText && <small className="help-text">{field.helpText[lang]}</small>}
-            {errors[key] && <p className="error-text">{errors[key]}</p>}
+            {/* Translate the error key dynamically during render */}
+            {errors[key] && <p className="error-text">{UI_LABELS[errors[key]][lang]}</p>}
           </div>
         );
       })}

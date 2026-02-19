@@ -19,12 +19,11 @@ const STATIC_UI = {
 export default function StaticPage({ products, lang, onUpdate, existingData, nextPath }) {
   const navigate = useNavigate();
   
-  // Initialize with empty strings to avoid uncontrolled input warnings
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
     email: "",
-    product: "" // This will store the Product NAME (e.g. "Premium Widget") to match F2B
+    product: "" 
   });
   
   const [errors, setErrors] = useState({});
@@ -51,27 +50,19 @@ export default function StaticPage({ products, lang, onUpdate, existingData, nex
     const newErrors = {};
     const { first_name, last_name, email, product } = formData;
 
-    if (!first_name) newErrors.first_name = STATIC_UI.required[lang];
-    if (!last_name) newErrors.last_name = STATIC_UI.required[lang];
-    if (!email) newErrors.email = STATIC_UI.required[lang];
-    if (!product) newErrors.product = STATIC_UI.required[lang];
+    // Store the KEY of the error, not the translated string
+    if (!first_name) newErrors.first_name = "required";
+    else if (!/^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/.test(first_name)) newErrors.first_name = "only_letters";
+    else if (first_name.trim().length < 2) newErrors.first_name = "min_chars";
 
-    // Regex Validation
-    if (first_name && !/^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/.test(first_name)) {
-      newErrors.first_name = STATIC_UI.only_letters[lang];
-    } else if (first_name && first_name.trim().length < 2) {
-      newErrors.first_name = STATIC_UI.min_chars[lang];
-    }
+    if (!last_name) newErrors.last_name = "required";
+    else if (!/^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/.test(last_name)) newErrors.last_name = "only_letters";
+    else if (last_name.trim().length < 2) newErrors.last_name = "min_chars";
 
-    if (last_name && !/^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/.test(last_name)) {
-      newErrors.last_name = STATIC_UI.only_letters[lang];
-    } else if (last_name && last_name.trim().length < 2) {
-      newErrors.last_name = STATIC_UI.min_chars[lang];
-    }
+    if (!email) newErrors.email = "required";
+    else if (!/^\S+@\S+\.\S+$/.test(email)) newErrors.email = "invalid_email";
 
-    if (email && !/^\S+@\S+\.\S+$/.test(email)) {
-      newErrors.email = STATIC_UI.invalid_email[lang];
-    }
+    if (!product) newErrors.product = "required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -99,7 +90,8 @@ export default function StaticPage({ products, lang, onUpdate, existingData, nex
           onChange={handleChange}
           style={errors.first_name ? { borderColor: 'red' } : {}}
         />
-        {errors.first_name && <p className="error-text">{errors.first_name}</p>}
+        {/* Translate the error key dynamically during render */}
+        {errors.first_name && <p className="error-text">{STATIC_UI[errors.first_name][lang]}</p>}
       </div>
 
       <div className="field-group">
@@ -111,7 +103,7 @@ export default function StaticPage({ products, lang, onUpdate, existingData, nex
           onChange={handleChange}
           style={errors.last_name ? { borderColor: 'red' } : {}}
         />
-        {errors.last_name && <p className="error-text">{errors.last_name}</p>}
+        {errors.last_name && <p className="error-text">{STATIC_UI[errors.last_name][lang]}</p>}
       </div>
 
       <div className="field-group">
@@ -124,7 +116,7 @@ export default function StaticPage({ products, lang, onUpdate, existingData, nex
           onChange={handleChange}
           style={errors.email ? { borderColor: 'red' } : {}}
         />
-        {errors.email && <p className="error-text">{errors.email}</p>}
+        {errors.email && <p className="error-text">{STATIC_UI[errors.email][lang]}</p>}
       </div>
 
       <div className="field-group">
@@ -138,14 +130,12 @@ export default function StaticPage({ products, lang, onUpdate, existingData, nex
         >
           <option value="">{STATIC_UI.select_product[lang]}</option>
           {products && products.map(p => (
-            // F2B requires the NAME (specifically English or current lang?), 
-            // F2B example says "Premium Widget" (EN). Let's use English Name for ID to ensure backend match.
             <option key={p.db_id} value={p.name.en}>
               {p.name[lang]}
             </option>
           ))}
         </select>
-        {errors.product && <p className="error-text">{errors.product}</p>}
+        {errors.product && <p className="error-text">{STATIC_UI[errors.product][lang]}</p>}
       </div>
 
       <div className="nav-buttons" style={{ justifyContent: 'flex-end' }}>
