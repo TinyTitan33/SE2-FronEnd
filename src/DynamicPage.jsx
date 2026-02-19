@@ -127,7 +127,7 @@ function DynamicPage({ pageData, lang, onUpdate, existingData, nextPath, prevPat
           <div className="nps-wrapper">
             <div className="nps-container">
               {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(score => (
-                <button key={score} type="button" className={`nps-btn ${score >= 9 ? "promoter" : score >= 7 ? "passive" : "detractor"} ${val === score ? 'selected' : ''}`} onClick={() => handleChange(key, score)}>
+                <button key={score} type="button" className={`nps-btn ${score >= 7 ? "promoter" : score >= 4 ? "passive" : "detractor"} ${val === score ? 'selected' : ''}`} onClick={() => handleChange(key, score)}>
                   {score}
                 </button>
               ))}
