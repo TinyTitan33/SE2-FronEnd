@@ -1,307 +1,351 @@
 {
-  "campaign_db_id": 101,
   "ui": {
     "requiredMark": "*"
   },
-  "products": [
-    {
-      "db_id": 501,
-      "name": {
-        "en": "Aurora Headphones Pro",
-        "fi": "Aurora-kuulokkeet Pro"
-      }
-    },
-    {
-      "db_id": 502,
-      "name": {
-        "en": "Nordic Smartwatch Series 3",
-        "fi": "Nordic-älykello Series 3"
-      }
-    },
-    {
-      "db_id": 503,
-      "name": {
-        "en": "Valkyrie Wireless Gaming Mouse",
-        "fi": "Langaton Valkyrie-pelihiiri"
-      }
-    },
-    {
-      "db_id": 504,
-      "name": {
-        "en": "Boreal Mechanical Keyboard",
-        "fi": "Boreal-mekaaninen näppäimistö"
-      }
-    },
-    {
-      "db_id": 505,
-      "name": {
-        "en": "Fjord 34\" Ultra-Wide Monitor",
-        "fi": "Fjord 34\" -ultralaajakuvanäyttö"
-      }
-    },
-    {
-      "db_id": 506,
-      "name": {
-        "en": "Tundra Smart Home Thermostat",
-        "fi": "Tundra-älytermostaatti"
-      }
-    }
-  ],
   "intro": {
     "title": {
-      "en": "Nordic Gadgets Customer Feedback",
-      "fi": "Nordic Gadgets -asiakaspalaute"
+      "en": "Thank you for your interest in flagship smartphones.",
+      "fi": "Kiitos kiinnostuksestasi lippulaivapuhelimiin."
     },
     "description": {
-      "en": "We value your opinion! Please take a moment to share your experience with our latest products.",
-      "fi": "Mielipiteesi on meille tärkeä! Käytä hetki jakaaksesi kokemuksesi uusimmista tuotteistamme."
+      "en": "Please take a short survey and tell us what you think about the phone and your experience.",
+      "fi": "Vastaa lyhyeen kyselyyn ja kerro mielipiteesi puhelimesta ja kokemuksestasi."
     }
   },
   "pages": [
     {
-      "order_page": 1,
       "fields": [
         {
-          "type": "info",
-          "order_field": 1,
-          "required": false,
-          "label": {
-            "en": "Let's start with some basic details about your recent purchase.",
-            "fi": "Aloitetaan perustiedoilla viimeisimmästä ostoksestasi."
-          },
-          "ui": {
-            "showRequirementHint": false
-          }
-        },
-        {
-          "type": "text",
-          "order_field": 2,
-          "required": true,
-          "label": {
-            "en": "Order Number",
-            "fi": "Tilausnumero"
-          },
           "ui": {
             "showRequirementHint": true
           },
-          "helpText": {
-            "en": "Starts with ORD- (e.g., ORD-12345)",
-            "fi": "Alkaa kirjaimilla ORD- (esim. ORD-12345)"
-          }
-        },
-        {
           "type": "dropdown",
-          "order_field": 3,
-          "required": true,
           "label": {
-            "en": "Where are you located?",
-            "fi": "Missä sijaitset?"
-          },
-          "ui": {
-            "showRequirementHint": false
+            "en": "What is your main use case?",
+            "fi": "Mikä on tärkein käyttötarkoituksesi?"
           },
           "options": [
             {
-              "value": "joensuu_nk",
-              "label": { "en": "Joensuu / North Karelia", "fi": "Joensuu / Pohjois-Karjala" }
+              "label": {
+                "en": "Camera & photos",
+                "fi": "Kamera ja valokuvat"
+              },
+              "value": "camera"
             },
             {
-              "value": "helsinki_capital",
-              "label": { "en": "Helsinki / Capital Region", "fi": "Helsinki / Pääkaupunkiseutu" }
+              "label": {
+                "en": "Gaming",
+                "fi": "Pelaaminen"
+              },
+              "value": "gaming"
             },
             {
-              "value": "tampere_pirkanmaa",
-              "label": { "en": "Tampere / Pirkanmaa", "fi": "Tampere / Pirkanmaa" }
+              "label": {
+                "en": "Work / productivity",
+                "fi": "Työ / tuottavuus"
+              },
+              "value": "work"
             },
             {
-              "value": "turku_sw",
-              "label": { "en": "Turku / Southwest Finland", "fi": "Turku / Varsinais-Suomi" }
+              "label": {
+                "en": "Battery life",
+                "fi": "Akkukesto"
+              },
+              "value": "battery"
             },
             {
-              "value": "oulu_no",
-              "label": { "en": "Oulu / Northern Ostrobothnia", "fi": "Oulu / Pohjois-Pohjanmaa" }
-            },
-            {
-              "value": "kuopio_ns",
-              "label": { "en": "Kuopio / Northern Savonia", "fi": "Kuopio / Pohjois-Savo" }
-            },
-            {
-              "value": "lapland",
-              "label": { "en": "Lapland", "fi": "Lappi" }
-            },
-            {
-              "value": "other_fi",
-              "label": { "en": "Elsewhere in Finland", "fi": "Muualla Suomessa" }
-            },
-            {
-              "value": "other_eu",
-              "label": { "en": "Other EU Country", "fi": "Muu EU-maa" }
-            },
-            {
-              "value": "international",
-              "label": { "en": "Outside EU", "fi": "EU:n ulkopuolella" }
+              "label": {
+                "en": "Everyday use",
+                "fi": "Päivittäinen käyttö"
+              },
+              "value": "everyday"
             }
-          ]
+          ],
+          "helpText": {
+            "en": "Choose the option that best describes your typical usage.",
+            "fi": "Valitse vaihtoehto, joka kuvaa parhaiten tyypillistä käyttöäsi."
+          },
+          "required": true,
+          "order_field": 1
+        },
+        {
+          "ui": {
+            "showRequirementHint": true
+          },
+          "type": "text",
+          "label": {
+            "en": "What feature impressed you most?",
+            "fi": "Mikä ominaisuus teki suurimman vaikutuksen?"
+          },
+          "helpText": {
+            "en": "Example: camera, display, performance, design, AI features.",
+            "fi": "Esim.: kamera, näyttö, suorituskyky, muotoilu, AI-ominaisuudet."
+          },
+          "required": true,
+          "order_field": 2
+        },
+        {
+          "ui": {
+            "showRequirementHint": true
+          },
+          "type": "checkbox",
+          "label": {
+            "en": "Which camera aspects did you like? (Select all that apply)",
+            "fi": "Mistä kameran ominaisuuksista pidit? (Valitse kaikki sopivat)"
+          },
+          "options": [
+            {
+              "label": {
+                "en": "Daylight photos",
+                "fi": "Päiväkuvat"
+              },
+              "value": "photos_daylight"
+            },
+            {
+              "label": {
+                "en": "Night mode",
+                "fi": "Yötila"
+              },
+              "value": "night_mode"
+            },
+            {
+              "label": {
+                "en": "Portrait mode",
+                "fi": "Muotokuva-tila"
+              },
+              "value": "portrait"
+            },
+            {
+              "label": {
+                "en": "Zoom / telephoto",
+                "fi": "Zoom / telekamera"
+              },
+              "value": "zoom"
+            },
+            {
+              "label": {
+                "en": "Video quality",
+                "fi": "Videon laatu"
+              },
+              "value": "video"
+            },
+            {
+              "label": {
+                "en": "Stabilization",
+                "fi": "Vakautus"
+              },
+              "value": "stabilization"
+            }
+          ],
+          "helpText": {
+            "en": "You can select more than one option.",
+            "fi": "Voit valita useamman vaihtoehdon."
+          },
+          "required": true,
+          "order_field": 3
         }
-      ]
+      ],
+      "order_page": 1
     },
     {
-      "order_page": 2,
       "fields": [
         {
-          "type": "rating",
-          "order_field": 1,
-          "required": true,
-          "label": {
-            "en": "How would you rate the overall build quality?",
-            "fi": "Miten arvioisit laitteen yleisen rakenteen laadun?"
-          },
           "ui": {
-            "showRequirementHint": false
-          }
-        },
-        {
-          "type": "nps",
-          "order_field": 2,
-          "required": true,
-          "label": {
-            "en": "How likely are you to recommend Nordic Gadgets to a friend?",
-            "fi": "Kuinka todennäköisesti suosittelisit Nordic Gadgetsia ystävällesi?"
+            "showRequirementHint": true
           },
-          "ui": {
-            "showRequirementHint": false
-          }
-        },
-        {
           "type": "radio",
-          "order_field": 3,
-          "required": true,
           "label": {
-            "en": "What was your primary reason for purchasing?",
-            "fi": "Mikä oli ensisijainen syysi ostokseen?"
-          },
-          "ui": {
-            "showRequirementHint": false
+            "en": "How would you rate the battery life?",
+            "fi": "Miten arvioisit akun keston?"
           },
           "options": [
             {
-              "value": "upgrade",
-              "label": { "en": "Upgrading an old device", "fi": "Vanhan laitteen päivitys" }
+              "label": {
+                "en": "Excellent",
+                "fi": "Erinomainen"
+              },
+              "value": "excellent"
             },
             {
-              "value": "gift",
-              "label": { "en": "Buying as a gift", "fi": "Ostin lahjaksi" }
+              "label": {
+                "en": "Good",
+                "fi": "Hyvä"
+              },
+              "value": "good"
             },
             {
-              "value": "first_time",
-              "label": { "en": "First-time buyer", "fi": "Ensimmäinen ostos" }
+              "label": {
+                "en": "Average",
+                "fi": "Keskitaso"
+              },
+              "value": "average"
             },
             {
-              "value": "work",
-              "label": { "en": "Work / Business use", "fi": "Työ / Yrityskäyttö" }
-            },
-            {
-              "value": "school",
-              "label": { "en": "School / Studies", "fi": "Koulu / Opinnot" }
+              "label": {
+                "en": "Poor",
+                "fi": "Heikko"
+              },
+              "value": "poor"
             }
-          ]
+          ],
+          "helpText": {
+            "en": "Choose one option.",
+            "fi": "Valitse yksi vaihtoehto."
+          },
+          "required": true,
+          "order_field": 1
+        },
+        {
+          "ui": {
+            "showRequirementHint": true
+          },
+          "type": "radio",
+          "label": {
+            "en": "Would you choose this brand again?",
+            "fi": "Valitsisitko tämän merkin uudelleen?"
+          },
+          "options": [
+            {
+              "label": {
+                "en": "Yes",
+                "fi": "Kyllä"
+              },
+              "value": "yes"
+            },
+            {
+              "label": {
+                "en": "No",
+                "fi": "Ei"
+              },
+              "value": "no"
+            },
+            {
+              "label": {
+                "en": "Not sure",
+                "fi": "En ole varma"
+              },
+              "value": "not_sure"
+            }
+          ],
+          "helpText": {
+            "en": "Choose one option.",
+            "fi": "Valitse yksi vaihtoehto."
+          },
+          "required": true,
+          "order_field": 2
         },
         {
           "type": "number",
-          "order_field": 4,
-          "required": false,
           "label": {
-            "en": "How many smart devices do you currently own?",
-            "fi": "Kuinka monta älylaitetta omistat tällä hetkellä?"
+            "en": "How many years have you been using smartphones?",
+            "fi": "Kuinka monta vuotta olet käyttänyt älypuhelimia?"
           },
+          "required": false,
+          "validation": {
+            "max": 10,
+            "min": 0,
+            "step": 1
+          },
+          "order_field": 3
+        }
+      ],
+      "order_page": 2
+    },
+    {
+      "fields": [
+        {
+          "type": "number",
+          "label": {
+            "en": "How many months do you typically keep a phone before upgrading?",
+            "fi": "Kuinka monta kuukautta pidät yleensä puhelinta ennen päivitystä?"
+          },
+          "required": false,
+          "validation": {
+            "max": 24,
+            "min": 0,
+            "step": 1
+          },
+          "order_field": 1
+        },
+        {
           "ui": {
             "showRequirementHint": true
           },
-          "helpText": {
-            "en": "Enter a number between 1 and 20",
-            "fi": "Syötä numero 1 ja 20 väliltä"
+          "type": "nps",
+          "label": {
+            "en": "Likelihood to recommend this phone (0–10)",
+            "fi": "Suosittelun todennäköisyys (0–10)"
           },
-          "min": 1,
-          "max": 20,
-          "step": 1
+          "helpText": {
+            "en": "0 = not at all likely, 10 = extremely likely",
+            "fi": "0 = ei lainkaan todennäköistä, 10 = erittäin todennäköistä"
+          },
+          "required": false,
+          "order_field": 2
+        },
+        {
+          "type": "info",
+          "label": {
+            "en": "Review your answers before submitting.",
+            "fi": "Tarkista vastauksesi ennen lähettämistä."
+          },
+          "required": false,
+          "order_field": 3
         }
-      ]
+      ],
+      "order_page": 3
     },
     {
-      "order_page": 3,
       "fields": [
         {
           "type": "checkbox",
-          "order_field": 1,
-          "required": false,
           "label": {
-            "en": "Which features do you use daily? (Select all that apply)",
-            "fi": "Mitä ominaisuuksia käytät päivittäin? (Valitse kaikki sopivat)"
+            "en": "I confirm the information is accurate",
+            "fi": "Vahvistan tietojen olevan oikein"
           },
-          "ui": {
-            "showRequirementHint": false
-          },
-          "options": [
-            {
-              "value": "activity_tracking",
-              "label": { "en": "Activity Tracking", "fi": "Aktiivisuuden seuranta" }
-            },
-            {
-              "value": "noise_cancellation",
-              "label": { "en": "Noise Cancellation", "fi": "Melunvaimennus" }
-            },
-            {
-              "value": "voice_assistant",
-              "label": { "en": "Voice Assistant", "fi": "Ääniavustaja" }
-            },
-            {
-              "value": "heart_rate",
-              "label": { "en": "Heart Rate Monitor", "fi": "Sykemittari" }
-            },
-            {
-              "value": "sleep_tracking",
-              "label": { "en": "Sleep Tracking", "fi": "Unenseuranta" }
-            },
-            {
-              "value": "notifications",
-              "label": { "en": "Mobile Notifications", "fi": "Mobiili-ilmoitukset" }
-            }
-          ]
-        },
-        {
-          "type": "textarea",
-          "order_field": 2,
-          "required": false,
-          "label": {
-            "en": "What could we do better?",
-            "fi": "Mitä voisimme tehdä paremmin?"
-          },
-          "ui": {
-            "showRequirementHint": true
-          },
-          "helpText": {
-            "en": "Feel free to be honest—we love constructive feedback!",
-            "fi": "Ole rehellinen – arvostamme rakentavaa palautetta!"
-          }
-        },
-        {
-          "type": "fileUpload",
-          "order_field": 3,
-          "required": false,
-          "label": {
-            "en": "Share a photo of your unboxing experience! (Optional)",
-            "fi": "Jaa kuva pakkauksen avaamisesta! (Valinnainen)"
-          },
-          "ui": {
-            "showRequirementHint": true
-          },
-          "helpText": {
-            "en": "Valid formats: JPG, PNG. Max 5MB.",
-            "fi": "Sallitut formaatit: JPG, PNG. Maksimikoko 5MB."
-          },
-          "valid_formats": ["JPG", "PNG"]
+          "required": true,
+          "order_field": 1
         }
-      ]
+      ],
+      "order_page": 4
     }
-  ]
+  ],
+  "products": [
+    {
+      "name": {
+        "en": "Apple iPhone 15 Pro",
+        "fi": "Apple iPhone 15 Pro"
+      },
+      "db_id": 15
+    },
+    {
+      "name": {
+        "en": "Samsung Galaxy S24 Ultra",
+        "fi": "Samsung Galaxy S24 Ultra"
+      },
+      "db_id": 16
+    },
+    {
+      "name": {
+        "en": "Google Pixel 8 Pro",
+        "fi": "Google Pixel 8 Pro"
+      },
+      "db_id": 17
+    },
+    {
+      "name": {
+        "en": "OnePlus 12",
+        "fi": "OnePlus 12"
+      },
+      "db_id": 18
+    },
+    {
+      "name": {
+        "en": "Xiaomi 14 Ultra",
+        "fi": "Xiaomi 14 Ultra"
+      },
+      "db_id": 19
+    }
+  ],
+  "campaign_db_id": 16
 }

@@ -52,6 +52,7 @@ function AppContent() {
     ? [...b2fData.pages].sort((a, b) => a.order_page - b.order_page)
     : [];
 
+  // Remove /confirm, the dynamic pages handle the end now
   const allRoutePaths = ["/", ...dynamicPages.map((p) => `/page/${p.order_page}`)];
   const currentIndex = allRoutePaths.indexOf(location.pathname);
   const currentStep = currentIndex + 1;
@@ -79,13 +80,14 @@ function AppContent() {
       first_name: completeData.first_name,
       last_name: completeData.last_name,
       email: completeData.email,
-      email_verified: true, 
+      email_verified: completeData.email_verified || false, 
       product_name: completeData.product,
       product_id: productId,
       flex: []
     };
 
     let npsData = null;
+    let flexOrderCounter = 1; 
 
     dynamicPages.forEach((page) => {
       [...page.fields]
@@ -104,14 +106,26 @@ function AppContent() {
                 nps_min: 0
               };
             } else {
-              // Ensure numeric inputs are cast to actual numbers, not strings
               let finalAnswer = completeData[key];
+
+              if (field.options) {
+                if (Array.isArray(finalAnswer)) {
+                  finalAnswer = finalAnswer.map(val => {
+                    const option = field.options.find(opt => opt.value === val);
+                    return option ? option.label.en : val;
+                  });
+                } else {
+                  const option = field.options.find(opt => opt.value === finalAnswer);
+                  if (option) finalAnswer = option.label.en;
+                }
+              }
+
               if (field.type === "number" && finalAnswer !== "" && finalAnswer !== undefined) {
                 finalAnswer = Number(finalAnswer);
               }
 
               payload.flex.push({
-                order: field.order_field,
+                order: flexOrderCounter++, 
                 question: field.label["en"],
                 answer: finalAnswer
               });
@@ -156,22 +170,61 @@ function AppContent() {
 
   const getFieldDisplay = (key, value) => {
     let label = key;
+    let fieldObj = null;
     
     dynamicPages.forEach((page) => {
       const field = page.fields.find(
         (f) => `p${page.order_page}_f${f.order_field}` === key
       );
-      if (field) label = field.label[lang];
+      if (field) {
+        label = field.label[lang];
+        fieldObj = field;
+      }
     });
 
     let displayValue = value;
-    if (typeof value === "boolean") {
+
+    if (value === "" || value === undefined || value === null || (Array.isArray(value) && value.length === 0)) {
+      displayValue = "—"; 
+    } else if (typeof value === "boolean") {
       displayValue = value ? UI_TEXT.yes[lang] : UI_TEXT.no[lang];
+    } else if (fieldObj?.type === "rating") {
+      displayValue = `${value} / 5`;
+    } else if (fieldObj?.type === "nps") {
+      displayValue = `${value} / 10`;
     } else if (Array.isArray(value)) {
-      displayValue = value.length > 0 ? value.join(", ") : "-";
+      if (fieldObj?.options) {
+        displayValue = value.map(v => {
+          const opt = fieldObj.options.find(o => o.value === v);
+          return opt ? opt.label[lang] : v;
+        }).join(", ");
+      } else {
+        displayValue = value.join(", ");
+      }
+    } else if (fieldObj?.options) {
+      const opt = fieldObj.options.find(o => o.value === value);
+      if (opt) displayValue = opt.label[lang];
     }
 
     return { label, value: displayValue };
+  };
+
+  const getTotalAnswered = () => {
+    const answeredStatic = ["first_name", "last_name", "email", "product"].filter(k => formData[k]).length;
+    const answeredDynamic = Object.keys(formData).filter(k => {
+      if (!k.match(/^p\d+_f\d+$/)) return false;
+      const val = formData[k];
+      if (val === "" || val === undefined || val === null) return false;
+      if (Array.isArray(val) && val.length === 0) return false;
+      
+      let isInfo = false;
+      dynamicPages.forEach((page) => {
+        const field = page.fields.find((f) => `p${page.order_page}_f${f.order_field}` === k);
+        if (field && field.type === "info") isInfo = true;
+      });
+      return !isInfo;
+    }).length;
+    return answeredStatic + answeredDynamic;
   };
 
   if (loading)
@@ -200,25 +253,15 @@ function AppContent() {
         </p>
 
         <div className="success-card">
-          <h3
-            style={{
-              borderBottom: "2px solid var(--border-light)",
-              paddingBottom: "10px",
-              marginTop: 0
-            }}
-          >
+          <h3 style={{ borderBottom: "2px solid var(--border-light)", paddingBottom: "10px", marginTop: 0 }}>
             {UI_TEXT.summary_title[lang]}
           </h3>
-
           <ul style={{ listStyle: "none", padding: 0 }}>
             {["first_name", "last_name", "email", "product"].map(
               (k) =>
                 formData[k] && (
                   <li key={k} className="success-item">
-                    <strong
-                      className="success-key"
-                      style={{ textTransform: "capitalize" }}
-                    >
+                    <strong className="success-key" style={{ textTransform: "capitalize" }}>
                       {k.replace("_", " ")}:
                     </strong>
                     <span className="success-value">{formData[k]}</span>
@@ -241,9 +284,7 @@ function AppContent() {
                 return (
                   <li key={key} className="success-item">
                     <strong className="success-key">{display.label}:</strong>
-                    <span className="success-value">
-                      {String(display.value)}
-                    </span>
+                    <span className="success-value">{String(display.value)}</span>
                   </li>
                 );
               })}
@@ -266,71 +307,32 @@ function AppContent() {
     <div className="app-container">
       <header className="app-header">
         <div className="lang-toggle">
-          <button
-            className={lang === "en" ? "active" : ""}
-            onClick={() => setLang("en")}
-          >
-            EN
-          </button>
-          <button
-            className={lang === "fi" ? "active" : ""}
-            onClick={() => setLang("fi")}
-          >
-            FI
-          </button>
+          <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>EN</button>
+          <button className={lang === "fi" ? "active" : ""} onClick={() => setLang("fi")}>FI</button>
         </div>
-
-        <p className="campaign-ref">
-          {UI_TEXT.header_id[lang]}: {b2fData.campaign_db_id}
-        </p>
+        <p className="campaign-ref">{UI_TEXT.header_id[lang]}: {b2fData.campaign_db_id}</p>
       </header>
 
       {currentIndex === 0 && b2fData.intro && (
         <div style={{ textAlign: "center", margin: "0 0 20px 0" }}>
-          <h3 style={{ color: "var(--text-main)", margin: 0 }}>
-            {b2fData.intro.title[lang]}
-          </h3>
-          <p style={{ color: "var(--text-muted)" }}>
-            {b2fData.intro.description[lang]}
-          </p>
+          <h3 style={{ color: "var(--text-main)", margin: 0 }}>{b2fData.intro.title[lang]}</h3>
+          <p style={{ color: "var(--text-muted)" }}>{b2fData.intro.description[lang]}</p>
         </div>
       )}
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          marginBottom: "6px",
-          fontSize: "0.9rem",
-          color: "var(--text-muted)",
-          fontWeight: "500"
-        }}
-      >
-        <span>
-          {UI_TEXT.step[lang]} {currentStep} {UI_TEXT.of[lang]} {totalSteps}
-        </span>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "6px", fontSize: "0.9rem", color: "var(--text-muted)", fontWeight: "500" }}>
+        <span>{UI_TEXT.step[lang]} {currentStep} {UI_TEXT.of[lang]} {totalSteps}</span>
       </div>
 
       <div className="progress-container">
-        <div
-          className="progress-bar"
-          style={{ width: `${progress}%` }}
-        ></div>
+        <div className="progress-bar" style={{ width: `${progress}%` }}></div>
       </div>
 
       <main className="form-content">
         <Routes>
           <Route
             path="/"
-            element={
-              <StaticPage
-                products={b2fData.products}
-                lang={lang}
-                onUpdate={handleUpdateData}
-                existingData={formData}
-                nextPath={allRoutePaths[1]}
-              />
-            }
+            element={<StaticPage products={b2fData.products} lang={lang} onUpdate={handleUpdateData} existingData={formData} nextPath={allRoutePaths[1]} />}
           />
 
           {dynamicPages.map((page, index) => (
@@ -340,6 +342,7 @@ function AppContent() {
               element={
                 <DynamicPage
                   pageData={page}
+                  allPages={dynamicPages}
                   lang={lang}
                   onUpdate={handleUpdateData}
                   existingData={formData}
@@ -347,6 +350,8 @@ function AppContent() {
                   prevPath={allRoutePaths[index]}
                   isLastPage={index === dynamicPages.length - 1}
                   onSubmit={handleFinalSubmit}
+                  getFieldDisplay={getFieldDisplay}
+                  getTotalAnswered={getTotalAnswered}
                 />
               }
             />

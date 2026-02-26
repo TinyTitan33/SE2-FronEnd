@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-// Local UI definitions for the static page
 const STATIC_UI = {
   title: { en: "Contact Information", fi: "Yhteystiedot" },
   first_name: { en: "First Name", fi: "Etunimi" },
@@ -14,8 +13,6 @@ const STATIC_UI = {
   invalid_email: { en: "Invalid email format", fi: "Virheellinen sähköpostiosoite" },
   only_letters: { en: "Only letters are allowed", fi: "Vain kirjaimet ovat sallittuja" },
   min_chars: { en: "Must be at least 2 characters", fi: "Vähintään 2 merkkiä vaaditaan" },
-  
-  // UI text for Email Verification
   verify_btn: { en: "Verify", fi: "Vahvista" },
   code_sent_msg: { en: "Enter the 6-digit code sent to your email", fi: "Syötä sähköpostiisi lähetetty 6-numeroinen koodi" },
   verify_code_btn: { en: "Submit Code", fi: "Lähetä koodi" },
@@ -37,8 +34,7 @@ export default function StaticPage({ products, lang, onUpdate, existingData, nex
   
   const [errors, setErrors] = useState({});
 
-  // Email Verification State
-  const [verificationStatus, setVerificationStatus] = useState("idle"); // idle, sent, verified, error
+  const [verificationStatus, setVerificationStatus] = useState("idle"); 
   const [expectedCode, setExpectedCode] = useState("");
   const [code, setCode] = useState(new Array(6).fill(""));
   const inputRefs = useRef([]);
@@ -66,10 +62,9 @@ export default function StaticPage({ products, lang, onUpdate, existingData, nex
     }
   };
 
-  // --- SIMULATED EMAIL LOGIC ---
   const handleSendCode = () => {
     if (!formData.email || !/^\S+@\S+\.\S+$/.test(formData.email)) {
-      setErrors(prev => ({ ...prev, email: "invalid_email" })); // STORE KEY, NOT STRING
+      setErrors(prev => ({ ...prev, email: "invalid_email" })); 
       return;
     }
 
@@ -109,13 +104,11 @@ export default function StaticPage({ products, lang, onUpdate, existingData, nex
       setVerificationStatus("error");
     }
   };
-  // -----------------------------
 
   const validate = () => {
     const newErrors = {};
     const { first_name, last_name, email, product } = formData;
 
-    // STORE KEYS, NOT STRINGS
     if (!first_name) newErrors.first_name = "required";
     else if (!/^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/.test(first_name)) newErrors.first_name = "only_letters";
     else if (first_name.trim().length < 2) newErrors.first_name = "min_chars";
@@ -145,6 +138,12 @@ export default function StaticPage({ products, lang, onUpdate, existingData, nex
     }
   };
 
+  const getInputClass = (fieldName, value) => {
+    if (errors[fieldName]) return "field-input is-error";
+    if (value && String(value).trim() !== "") return "field-input is-filled";
+    return "field-input is-empty";
+  };
+
   return (
     <div className="form-container">
       <h2 style={{ color: 'var(--text-main)', marginBottom: '20px' }}>
@@ -152,44 +151,43 @@ export default function StaticPage({ products, lang, onUpdate, existingData, nex
       </h2>
 
       <div className="field-group">
-        <label className="field-label">{STATIC_UI.first_name[lang]} *</label>
+        <label className="field-label">{STATIC_UI.first_name[lang]} <span style={{ color: "#ff6b6b" }}>*</span></label>
+        <small className="help-text">Minimum 2 letters.</small>
         <input
           name="first_name"
-          className="field-input"
+          className={getInputClass("first_name", formData.first_name)}
           value={formData.first_name}
           onChange={handleChange}
-          style={errors.first_name ? { borderColor: 'red' } : {}}
         />
-        {/* Dynamic translation mapping on render */}
         {errors.first_name && <p className="error-text">{STATIC_UI[errors.first_name][lang]}</p>}
       </div>
 
       <div className="field-group">
-        <label className="field-label">{STATIC_UI.last_name[lang]} *</label>
+        <label className="field-label">{STATIC_UI.last_name[lang]} <span style={{ color: "#ff6b6b" }}>*</span></label>
+        <small className="help-text">Minimum 2 letters.</small>
         <input
           name="last_name"
-          className="field-input"
+          className={getInputClass("last_name", formData.last_name)}
           value={formData.last_name}
           onChange={handleChange}
-          style={errors.last_name ? { borderColor: 'red' } : {}}
         />
         {errors.last_name && <p className="error-text">{STATIC_UI[errors.last_name][lang]}</p>}
       </div>
 
       <div className="field-group">
-        <label className="field-label">{STATIC_UI.email[lang]} *</label>
+        <label className="field-label">{STATIC_UI.email[lang]} <span style={{ color: "#ff6b6b" }}>*</span></label>
+        <small className="help-text">Please enter a valid email address.</small>
         
-        <div style={{ display: "flex", gap: "10px" }}>
+        <div style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
           <input
             name="email"
             type="email"
-            className="field-input"
+            className={getInputClass("email", formData.email)}
             value={formData.email}
             onChange={handleChange}
             disabled={verificationStatus === "verified"}
             style={{ 
-              ...(errors.email ? { borderColor: 'red' } : {}),
-              backgroundColor: verificationStatus === "verified" ? "rgba(46, 125, 50, 0.05)" : "var(--bg-input)",
+              backgroundColor: verificationStatus === "verified" ? "rgba(46, 125, 50, 0.05)" : "transparent",
               borderColor: verificationStatus === "verified" ? "#2e7d32" : ""
             }}
           />
@@ -198,7 +196,7 @@ export default function StaticPage({ products, lang, onUpdate, existingData, nex
               type="button" 
               onClick={handleSendCode} 
               className="next-button" 
-              style={{ height: "42px", padding: "0 20px", whiteSpace: "nowrap" }}
+              style={{ height: "46px", padding: "0 20px", whiteSpace: "nowrap", marginBottom: "2px" }}
             >
               {STATIC_UI.verify_btn[lang]}
             </button>
@@ -274,13 +272,13 @@ export default function StaticPage({ products, lang, onUpdate, existingData, nex
       </div>
 
       <div className="field-group">
-        <label className="field-label">{STATIC_UI.product[lang]} *</label>
+        <label className="field-label">{STATIC_UI.product[lang]} <span style={{ color: "#ff6b6b" }}>*</span></label>
+        <small className="help-text">Select the car/service you tested.</small>
         <select
           name="product"
-          className="field-input"
+          className={getInputClass("product", formData.product)}
           value={formData.product}
           onChange={handleChange}
-          style={errors.product ? { borderColor: 'red' } : {}}
         >
           <option value="">{STATIC_UI.select_product[lang]}</option>
           {products && products.map(p => (

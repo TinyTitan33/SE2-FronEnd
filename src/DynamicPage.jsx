@@ -4,14 +4,30 @@ import { useNavigate } from "react-router-dom";
 const UI_LABELS = {
   required: { en: "This field is required", fi: "Tämä kenttä on pakollinen" },
   too_short: { en: "Must be at least 3 characters", fi: "Vähintään 3 merkkiä vaaditaan" },
+  out_of_range: { en: "Value is out of allowed range", fi: "Arvo on sallitun alueen ulkopuolella" },
   select_placeholder: { en: "-- Select --", fi: "-- Valitse --" },
   back: { en: "Back", fi: "Takaisin" },
   next: { en: "Next", fi: "Seuraava" },
   submit: { en: "Submit", fi: "Lähetä" },
-  not_selected: { en: "Not selected", fi: "Ei valittu" }
+  not_selected: { en: "Not selected", fi: "Ei valittu" },
+  confirm_title: { en: "Review your answers", fi: "Tarkista vastauksesi" },
+  confirm_msg: { en: "Please review your details. You can go back to edit anything.", fi: "Tarkista tietosi. Voit palata muokkaamaan mitä tahansa." },
+  answered: { en: "answered", fi: "vastattua" }
 };
 
-function DynamicPage({ pageData, lang, onUpdate, existingData, nextPath, prevPath, isLastPage, onSubmit }) {
+function DynamicPage({ 
+  pageData, 
+  allPages, 
+  lang, 
+  onUpdate, 
+  existingData, 
+  nextPath, 
+  prevPath, 
+  isLastPage, 
+  onSubmit, 
+  getFieldDisplay, 
+  getTotalAnswered 
+}) {
   const navigate = useNavigate();
   const [form, setForm] = useState({});
   const [errors, setErrors] = useState({});
@@ -44,7 +60,6 @@ function DynamicPage({ pageData, lang, onUpdate, existingData, nextPath, prevPat
       if (field.required) {
         const isEmpty = (field.type === 'checkbox' && !field.options) ? value !== true : !value || (Array.isArray(value) && value.length === 0);
         if (isEmpty) {
-          // Store the KEY of the error
           newErrors[key] = "required";
           return;
         }
@@ -52,6 +67,16 @@ function DynamicPage({ pageData, lang, onUpdate, existingData, nextPath, prevPat
 
       if (field.required && (field.type === "text" || field.type === "textarea") && String(value).trim().length < 3) {
         newErrors[key] = "too_short";
+      }
+
+      if (field.type === "number" && value !== "" && value !== undefined) {
+        const numVal = Number(value);
+        const min = field.validation?.min ?? field.min;
+        const max = field.validation?.max ?? field.max;
+        
+        if ((min !== undefined && numVal < min) || (max !== undefined && numVal > max)) {
+          newErrors[key] = "out_of_range";
+        }
       }
     });
     setErrors(newErrors);
@@ -62,15 +87,32 @@ function DynamicPage({ pageData, lang, onUpdate, existingData, nextPath, prevPat
     const key = getFieldKey(field);
     const val = form[key];
 
+    const hasError = !!errors[key];
+    const isFilled = val !== "" && val !== undefined && val !== null && (!Array.isArray(val) || val.length > 0);
+    const inputClass = `field-input ${hasError ? 'is-error' : (isFilled ? 'is-filled' : 'is-empty')}`;
+
     switch (field.type) {
       case "text":
       case "number":
-        return <input className="field-input" type={field.type} value={val || ""} onChange={(e) => handleChange(key, e.target.value)} />;
+        const min = field.validation?.min ?? field.min;
+        const max = field.validation?.max ?? field.max;
+        const step = field.validation?.step ?? field.step;
+        return (
+          <input 
+            className={inputClass} 
+            type={field.type} 
+            min={min} 
+            max={max} 
+            step={step}
+            value={val !== undefined ? val : ""} 
+            onChange={(e) => handleChange(key, e.target.value)} 
+          />
+        );
       case "textarea":
-        return <textarea className="field-input" rows={4} value={val || ""} onChange={(e) => handleChange(key, e.target.value)} />;
+        return <textarea className={inputClass} rows={4} value={val || ""} onChange={(e) => handleChange(key, e.target.value)} />;
       case "dropdown":
         return (
-          <select className="field-input" value={val || ""} onChange={(e) => handleChange(key, e.target.value)}>
+          <select className={inputClass} value={val || ""} onChange={(e) => handleChange(key, e.target.value)}>
             <option value="">{UI_LABELS.select_placeholder[lang]}</option>
             {field.options?.map(opt => <option key={opt.value} value={opt.value}>{opt.label[lang]}</option>)}
           </select>
@@ -126,7 +168,13 @@ function DynamicPage({ pageData, lang, onUpdate, existingData, nextPath, prevPat
           <div className="nps-wrapper">
             <div className="nps-container">
               {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(score => (
-                <button key={score} type="button" className={`nps-btn ${score >= 7 ? "promoter" : score >= 3 ? "passive" : "detractor"} ${val === score ? 'selected' : ''}`} onClick={() => handleChange(key, score)}>
+                <button 
+                  key={score} 
+                  type="button" 
+                  style={{ "--nps-color": `var(--nps-${score})` }}
+                  className={`nps-btn ${val === score ? 'selected' : ''}`} 
+                  onClick={() => handleChange(key, score)}
+                >
                   {score}
                 </button>
               ))}
@@ -141,23 +189,79 @@ function DynamicPage({ pageData, lang, onUpdate, existingData, nextPath, prevPat
 
   return (
     <div className="form-container">
+      
+      {/* INJECTED SUMMARY */}
+      {isLastPage && (
+        <div style={{ marginBottom: "35px" }}>
+          <div className="review-header-container">
+            <div className="review-header-text">
+              <h2>{UI_LABELS.confirm_title[lang]}</h2>
+              <p>{UI_LABELS.confirm_msg[lang]}</p>
+            </div>
+            <div className="answered-badge">
+              {getTotalAnswered()} {UI_LABELS.answered[lang]}
+            </div>
+          </div>
+
+          <div className="review-list">
+            {["first_name", "last_name", "email", "product"].map(
+              (k) =>
+                existingData[k] && (
+                  <div key={k} className="review-row">
+                    <div className="review-label" style={{ textTransform: "capitalize" }}>
+                      {k.replace("_", " ")}
+                    </div>
+                    <div className="review-value">{existingData[k]}</div>
+                  </div>
+                )
+            )}
+
+            {Object.keys(existingData)
+              .filter((k) => k.match(/^p\d+_f\d+$/))
+              .filter((key) => {
+                let isInfo = false;
+                allPages.forEach((p) => {
+                  const f = p.fields.find((field) => `p${p.order_page}_f${field.order_field}` === key);
+                  if (f && f.type === "info") isInfo = true;
+                });
+                
+                const isCurrentPage = key.startsWith(`p${pageData.order_page}_`);
+                
+                return !isInfo && !isCurrentPage;
+              })
+              .map((key) => {
+                const display = getFieldDisplay(key, existingData[key]);
+                return (
+                  <div key={key} className="review-row">
+                    <div className="review-label">{display.label}</div>
+                    <div className="review-value">
+                      {String(display.value)}
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      {/* STANDARD FIELDS RENDER */}
       {sortedFields.map(field => {
         const key = getFieldKey(field);
         return (
           <div key={key} className="field-group">
             {field.type !== "info" && !(field.type === "checkbox" && !field.options) && (
-  <label className="field-label">
-    {field.label[lang]} {field.required ? "*" : ""}
-  </label>
-)}
+              <label className="field-label">
+                {field.label[lang]} {field.required ? <span style={{ color: "#ff6b6b" }}>*</span> : ""}
+              </label>
+            )}
             {field.type === "info" && <p style={{ color: 'var(--text-main)', marginBottom: '10px' }}>{field.label[lang]}</p>}
+            {field.helpText && <small className="help-text" style={{ marginBottom: "5px", display: "block" }}>{field.helpText[lang]}</small>}
             {renderField(field)}
-            {field.helpText && <small className="help-text">{field.helpText[lang]}</small>}
-            {/* Translate the error key dynamically during render */}
             {errors[key] && <p className="error-text">{UI_LABELS[errors[key]][lang]}</p>}
           </div>
         );
       })}
+
       <div className="nav-buttons">
         <button onClick={() => navigate(prevPath)} disabled={!prevPath} className="back-button">
           <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" /></svg>
