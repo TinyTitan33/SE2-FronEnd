@@ -1,24 +1,128 @@
+# Dependency directories
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build directories
+dist/
+build/
+out/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Tests and code coverage
+coverage/
+.nyc_output/
+test-results/
+junit.xml
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Editors and IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+
+# Application configuration files
+config/
+!config/example.config.js
+config/local.js
+config/development.js
+config/production.js
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Documentation
+docs/
+apidoc/
+
+# Cache
+.eslintcache
+.stylelintcache
+.cache/
+.preact/
+
+# Dependency files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Docker
+docker-compose.override.yml
+.dockerignore
+Dockerfile.dev
+
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Upload directories
+uploads/
+public/uploads/
+media/
+
+# Secrets and keys
+*.pem
+*.key
+*.crt
+*.p12
+secrets/
+
+## Additional recommendations:
+
+If using specific tools, add:
+
+```gitignore
+# Next.js
+.next/
+out/
+
+# Nuxt.js
+.nuxt/
+dist/
+
+# Vue
+vue.config.js
+.vuepress/dist/
+
+# Angular
+# compiled output
+/dist
+/dist-packages
+/tmp
+/out-tsc
+
+# Serverless
+.serverless/
+
+# PM2
+pm2-*.json
+.pm2/
+
+# Jest
+/junit.xml
+/test-results/
+
+# Cypress
+cypress/videos/
+cypress/screenshots/

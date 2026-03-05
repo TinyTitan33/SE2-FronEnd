@@ -22,14 +22,15 @@ const STATIC_UI = {
   incorrect_code: { en: "Incorrect code", fi: "Virheellinen koodi" }
 };
 
-export default function StaticPage({ products, lang, onUpdate, existingData, nextPath }) {
+export default function StaticPage({ products, lang, onUpdate, existingData, nextPath, campaign_db_id }) {
   const navigate = useNavigate();
-  
+  const campaignId = campaign_db_id;
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
     email: "",
-    product: "" 
+    product: "" ,
+    email_verified: false 
   });
   
   const [errors, setErrors] = useState({});
@@ -38,6 +39,10 @@ export default function StaticPage({ products, lang, onUpdate, existingData, nex
   const [expectedCode, setExpectedCode] = useState("");
   const [code, setCode] = useState(new Array(6).fill(""));
   const inputRefs = useRef([]);
+
+  // status for error and success messages
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     if (existingData) {
@@ -62,21 +67,59 @@ export default function StaticPage({ products, lang, onUpdate, existingData, nex
     }
   };
 
-  const handleSendCode = () => {
-    if (!formData.email || !/^\S+@\S+\.\S+$/.test(formData.email)) {
-      setErrors(prev => ({ ...prev, email: "invalid_email" })); 
-      return;
-    }
+const handleSendCode = async () => {
+  if (!formData.email || !/^\S+@\S+\.\S+$/.test(formData.email)) {
+    setErrors(prev => ({ ...prev, email: "invalid_email" }));
+    return;
+  }
 
+  try {
     const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+
     setExpectedCode(newCode);
     setVerificationStatus("sent");
     setCode(new Array(6).fill(""));
 
-    alert(`📧 SIMULATED EMAIL TO ${formData.email}:\n\nYour Nordic Gadgets verification code is: ${newCode}`);
-    
-    setTimeout(() => { if (inputRefs.current[0]) inputRefs.current[0].focus(); }, 100);
-  };
+    console.log("Campaign ID:", campaignId);
+    console.log("Email:", formData.email);
+    console.log("Code:", newCode); // for debug
+
+    const response = await fetch("/api/webhook/email-verif", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        campaign_db_id: campaignId,
+        email: formData.email,
+        code: newCode
+      })
+    });
+
+    const data = await response.json(); // receive data from the response
+  
+    if (!response.ok) {
+      // If the server returned an error
+      console.error("Server error message:", data.message);
+      setErrorMessage(data.message); // Save the error message in state
+      setVerificationStatus("error");
+      return;
+    }
+
+    // Successful response
+    console.log("Success message:", data.message);
+    setSuccessMessage(data.message); // Save successful message
+
+
+    setTimeout(() => {
+      if (inputRefs.current[0]) inputRefs.current[0].focus();
+    }, 100);
+
+  } catch (err) {
+    console.error("Failed to send verification email:", err);
+    setVerificationStatus("error");
+  }
+};
 
   const handleCodeChange = (element, index) => {
     if (isNaN(element.value)) return false; 
@@ -99,6 +142,10 @@ export default function StaticPage({ products, lang, onUpdate, existingData, nex
   const handleVerifyCode = () => {
     if (code.join("") === expectedCode) {
       setVerificationStatus("verified");
+      setFormData(prev => ({
+      ...prev,
+      email_verified: true   
+    }));
       setErrors(prev => ({ ...prev, email: null }));
     } else {
       setVerificationStatus("error");
@@ -177,6 +224,30 @@ export default function StaticPage({ products, lang, onUpdate, existingData, nex
       <div className="field-group">
         <label className="field-label">{STATIC_UI.email[lang]} <span style={{ color: "#ff6b6b" }}>*</span></label>
         <small className="help-text">Please enter a valid email address.</small>
+
+        {errorMessage && (
+          <div className="error-message" style={{ 
+            color: "#ff6b6b", 
+            margin: "10px 0", 
+            padding: "8px", 
+            backgroundColor: "rgba(255, 107, 107, 0.1)", 
+            borderRadius: "4px" 
+          }}>
+            {errorMessage}
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="success-message" style={{ 
+            color: "#2e7d32", 
+            margin: "10px 0", 
+            padding: "8px", 
+            backgroundColor: "rgba(46, 125, 50, 0.1)", 
+            borderRadius: "4px" 
+          }}>
+            {successMessage}
+          </div>
+        )}
         
         <div style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
           <input
