@@ -12,7 +12,11 @@ const UI_LABELS = {
   not_selected: { en: "Not selected", fi: "Ei valittu" },
   confirm_title: { en: "Review your answers", fi: "Tarkista vastauksesi" },
   confirm_msg: { en: "Please review your details. You can go back to edit anything.", fi: "Tarkista tietosi. Voit palata muokkaamaan mitä tahansa." },
-  answered: { en: "answered", fi: "vastattua" }
+  answered: { en: "answered", fi: "vastattua" },
+  first_name: { en: "First Name", fi: "Etunimi" },
+  last_name: { en: "Last Name", fi: "Sukunimi" },
+  email: { en: "Email Address", fi: "Sähköpostiosoite" },
+  product: { en: "Product", fi: "Tuote" }
 };
 
 function DynamicPage({ 
@@ -83,13 +87,33 @@ function DynamicPage({
     return Object.keys(newErrors).length === 0;
   };
 
+  const getFieldStatusClass = (field, val, hasError) => {
+    if (hasError) return "is-error";
+    
+    const isEmpty = val === "" || val === undefined || val === null || (Array.isArray(val) && val.length === 0) || (field.type === 'checkbox' && !field.options && val === false);
+    if (isEmpty) return "is-empty";
+    
+    // Check specific validity criteria based on field type
+    let isValid = true;
+    if (field.type === "text" || field.type === "textarea") {
+      if (String(val).trim().length < 3) isValid = false;
+    } else if (field.type === "number") {
+      const numVal = Number(val);
+      const min = field.validation?.min ?? field.min;
+      const max = field.validation?.max ?? field.max;
+      if ((min !== undefined && numVal < min) || (max !== undefined && numVal > max)) isValid = false;
+    }
+    
+    return isValid ? "is-filled" : "";
+  };
+
   const renderField = (field) => {
     const key = getFieldKey(field);
     const val = form[key];
-
     const hasError = !!errors[key];
-    const isFilled = val !== "" && val !== undefined && val !== null && (!Array.isArray(val) || val.length > 0);
-    const inputClass = `field-input ${hasError ? 'is-error' : (isFilled ? 'is-filled' : 'is-empty')}`;
+
+    const statusClass = getFieldStatusClass(field, val, hasError);
+    const inputClass = `field-input ${statusClass}`.trim();
 
     switch (field.type) {
       case "text":
@@ -208,8 +232,8 @@ function DynamicPage({
               (k) =>
                 existingData[k] && (
                   <div key={k} className="review-row">
-                    <div className="review-label" style={{ textTransform: "capitalize" }}>
-                      {k.replace("_", " ")}
+                    <div className="review-label">
+                      {UI_LABELS[k] ? UI_LABELS[k][lang] : k.replace("_", " ")}
                     </div>
                     <div className="review-value">{existingData[k]}</div>
                   </div>

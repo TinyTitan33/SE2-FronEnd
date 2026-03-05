@@ -17,7 +17,11 @@ const UI_TEXT = {
   submitting: { en: "Submitting...", fi: "Lähetetään..." },
   error: { en: "Error loading campaign data.", fi: "Virhe ladattaessa kampanjatietoja." },
   yes: { en: "Yes", fi: "Kyllä" },
-  no: { en: "No", fi: "Ei" }
+  no: { en: "No", fi: "Ei" },
+  first_name: { en: "First Name", fi: "Etunimi" },
+  last_name: { en: "Last Name", fi: "Sukunimi" },
+  email: { en: "Email Address", fi: "Sähköpostiosoite" },
+  product: { en: "Product", fi: "Tuote" }
 };
 
 function App() {
@@ -70,9 +74,6 @@ function AppContent() {
       
       setLoading(true);
       try {
-        // const campaignId = searchParams.get("campaignId") || "14";
-        // const campaignId = searchParams.get("campaignId");
-        // setCampaignDbId(campaignId);
         const endpoint = `http://10.150.0.101:5678/webhook/get-campaign?campaignId=${campaignId}`;
         
         const response = await fetch(endpoint);
@@ -193,8 +194,6 @@ function AppContent() {
 
     // --- API POST CALL ---
     try {
-      // const id = searchParams.get("campaignId") || "14";
-      // setCampaignDbId(id);
       const POST_ENDPOINT = "/api/webhook/submit-form";
 
       const response = await fetch(POST_ENDPOINT, {
@@ -309,43 +308,56 @@ function AppContent() {
 
   if (isSubmitted) {
     return (
-      <div className="success-screen">
-        <h1 style={{ color: "#2e7d32" }}>{UI_TEXT.success_title[lang]}</h1>
-        <p style={{ fontSize: "1.2em", color: "var(--text-muted)" }}>{UI_TEXT.success_msg[lang]}</p>
-        <div className="success-card">
-          <h3 style={{ borderBottom: "2px solid var(--border-light)", paddingBottom: "10px", marginTop: 0 }}>
-            {UI_TEXT.summary_title[lang]}
-          </h3>
-          <ul style={{ listStyle: "none", padding: 0 }}>
-            {["first_name", "last_name", "email", "product"].map((k) => (
-              formData[k] && (
-                <li key={k} className="success-item">
-                  <strong className="success-key" style={{ textTransform: "capitalize" }}>{k.replace("_", " ")}:</strong>
-                  <span className="success-value">{formData[k]}</span>
-                </li>
-              )
-            ))}
-            {Object.keys(formData).filter((k) => k.match(/^p\d+_f\d+$/)).filter((key) => {
-              let isInfo = false;
-              dynamicPages.forEach((page) => {
-                const field = page.fields.find((f) => `p${page.order_page}_f${f.order_field}` === key);
-                if (field && field.type === "info") isInfo = true;
-              });
-              return !isInfo;
-            }).map((key) => {
-              const display = getFieldDisplay(key, formData[key]);
-              return (
-                <li key={key} className="success-item">
-                  <strong className="success-key">{display.label}:</strong>
-                  <span className="success-value">{String(display.value)}</span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-        <div style={{ display: "flex", justifyContent: "center", gap: "15px", margin: "30px auto" }}>
-          <button onClick={handleDownloadJson} className="next-button">{UI_TEXT.download_json[lang]}</button>
-          <button onClick={handleRestart} className="back-button">{UI_TEXT.restart[lang]}</button>
+      <div className="app-container">
+        {/* --- INJECTED HEADER INTO SUCCESS SCREEN --- */}
+        <header className="app-header">
+          <div className="lang-toggle">
+            <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>EN</button>
+            <button className={lang === "fi" ? "active" : ""} onClick={() => setLang("fi")}>FI</button>
+          </div>
+          <p className="campaign-ref">{UI_TEXT.header_id[lang]}: {campaignDbId}</p>
+        </header>
+
+        <div className="success-screen">
+          <h1 style={{ color: "#2e7d32" }}>{UI_TEXT.success_title[lang]}</h1>
+          <p style={{ fontSize: "1.2em", color: "var(--text-muted)" }}>{UI_TEXT.success_msg[lang]}</p>
+          <div className="success-card">
+            <h3 style={{ borderBottom: "2px solid var(--border-light)", paddingBottom: "10px", marginTop: 0 }}>
+              {UI_TEXT.summary_title[lang]}
+            </h3>
+            <ul style={{ listStyle: "none", padding: 0 }}>
+              {["first_name", "last_name", "email", "product"].map((k) => (
+                formData[k] && (
+                  <li key={k} className="success-item">
+                    <strong className="success-key">
+                      {UI_TEXT[k] ? UI_TEXT[k][lang] : k.replace("_", " ")}:
+                    </strong>
+                    <span className="success-value">{formData[k]}</span>
+                  </li>
+                )
+              ))}
+              {Object.keys(formData).filter((k) => k.match(/^p\d+_f\d+$/)).filter((key) => {
+                let isInfo = false;
+                dynamicPages.forEach((page) => {
+                  const field = page.fields.find((f) => `p${page.order_page}_f${f.order_field}` === key);
+                  if (field && field.type === "info") isInfo = true;
+                });
+                return !isInfo;
+              }).map((key) => {
+                const display = getFieldDisplay(key, formData[key]);
+                return (
+                  <li key={key} className="success-item">
+                    <strong className="success-key">{display.label}:</strong>
+                    <span className="success-value">{String(display.value)}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", gap: "15px", margin: "30px auto" }}>
+            <button onClick={handleDownloadJson} className="next-button">{UI_TEXT.download_json[lang]}</button>
+            <button onClick={handleRestart} className="back-button">{UI_TEXT.restart[lang]}</button>
+          </div>
         </div>
       </div>
     );

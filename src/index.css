@@ -11,6 +11,10 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Star Rating Colors */
+  --star-inactive: #cbd5e1;
+  --star-active: #f59e0b;
 }
 
 a {
@@ -58,11 +62,18 @@ button:focus-visible {
   :root {
     color: #213547;
     background-color: #ffffff;
+    --star-inactive: #cbd5e1;
   }
   a:hover {
     color: #747bff;
   }
   button {
     background-color: #f9f9f9;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --star-inactive: #64748b;
   }
 }

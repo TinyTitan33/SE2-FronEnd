@@ -62,64 +62,71 @@ export default function StaticPage({ products, lang, onUpdate, existingData, nex
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
     
-    if (name === "email" && verificationStatus === "verified") {
-      setVerificationStatus("idle");
+    if (name === "email") {
+      // Reset verification state completely when the email value changes
+      if (verificationStatus !== "idle") {
+        setVerificationStatus("idle");
+        setExpectedCode("");
+        setCode(new Array(6).fill(""));
+        setErrorMessage("");
+        setSuccessMessage("");
+        setFormData(prev => ({ ...prev, email_verified: false }));
+      }
     }
   };
 
-const handleSendCode = async () => {
-  if (!formData.email || !/^\S+@\S+\.\S+$/.test(formData.email)) {
-    setErrors(prev => ({ ...prev, email: "invalid_email" }));
-    return;
-  }
-
-  try {
-    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-    setExpectedCode(newCode);
-    setVerificationStatus("sent");
-    setCode(new Array(6).fill(""));
-
-    console.log("Campaign ID:", campaignId);
-    console.log("Email:", formData.email);
-    console.log("Code:", newCode); // for debug
-
-    const response = await fetch("/api/webhook/email-verif", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        campaign_db_id: campaignId,
-        email: formData.email,
-        code: newCode
-      })
-    });
-
-    const data = await response.json(); // receive data from the response
-  
-    if (!response.ok) {
-      // If the server returned an error
-      console.error("Server error message:", data.message);
-      setErrorMessage(data.message); // Save the error message in state
-      setVerificationStatus("error");
+  const handleSendCode = async () => {
+    if (!formData.email || !/^\S+@\S+\.\S+$/.test(formData.email)) {
+      setErrors(prev => ({ ...prev, email: "invalid_email" }));
       return;
     }
 
-    // Successful response
-    console.log("Success message:", data.message);
-    setSuccessMessage(data.message); // Save successful message
+    try {
+      const newCode = Math.floor(100000 + Math.random() * 900000).toString();
 
+      setExpectedCode(newCode);
+      setVerificationStatus("sent");
+      setCode(new Array(6).fill(""));
 
-    setTimeout(() => {
-      if (inputRefs.current[0]) inputRefs.current[0].focus();
-    }, 100);
+      console.log("Campaign ID:", campaignId);
+      console.log("Email:", formData.email);
+      console.log("Code:", newCode); // for debug
 
-  } catch (err) {
-    console.error("Failed to send verification email:", err);
-    setVerificationStatus("error");
-  }
-};
+      const response = await fetch("/api/webhook/email-verif", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          campaign_db_id: campaignId,
+          email: formData.email,
+          code: newCode
+        })
+      });
+
+      const data = await response.json(); // receive data from the response
+    
+      if (!response.ok) {
+        // If the server returned an error
+        console.error("Server error message:", data.message);
+        setErrorMessage(data.message); // Save the error message in state
+        setVerificationStatus("error");
+        return;
+      }
+
+      // Successful response
+      console.log("Success message:", data.message);
+      setSuccessMessage(data.message); // Save successful message
+
+      setTimeout(() => {
+        if (inputRefs.current[0]) inputRefs.current[0].focus();
+      }, 100);
+
+    } catch (err) {
+      console.error("Failed to send verification email:", err);
+      setVerificationStatus("error");
+    }
+  };
 
   const handleCodeChange = (element, index) => {
     if (isNaN(element.value)) return false; 
@@ -136,6 +143,32 @@ const handleSendCode = async () => {
   const handleCodeKeyDown = (e, index) => {
     if (e.key === "Backspace" && !code[index] && index > 0) {
       inputRefs.current[index - 1].focus();
+    }
+  };
+
+  // --- NEW PASTE LOGIC ---
+  const handleCodePaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text");
+    
+    // Extract only digits and limit to 6 characters
+    const digits = pastedData.replace(/\D/g, "").slice(0, 6);
+    
+    if (digits) {
+      const newCode = [...code];
+      // Fill the boxes with the pasted digits
+      for (let i = 0; i < newCode.length; i++) {
+        newCode[i] = digits[i] || "";
+      }
+      setCode(newCode);
+      
+      if (verificationStatus === "error") setVerificationStatus("sent");
+
+      // Auto-focus the next logical empty box, or the last box if completely filled
+      const focusIndex = Math.min(digits.length, 5);
+      if (inputRefs.current[focusIndex]) {
+        inputRefs.current[focusIndex].focus();
+      }
     }
   };
 
@@ -185,10 +218,27 @@ const handleSendCode = async () => {
     }
   };
 
+  const isFieldValid = (fieldName, value) => {
+    if (!value || String(value).trim() === "") return false;
+    
+    switch (fieldName) {
+      case "first_name":
+      case "last_name":
+        return /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/.test(value) && value.trim().length >= 2;
+      case "email":
+        return /^\S+@\S+\.\S+$/.test(value);
+      case "product":
+        return !!value;
+      default:
+        return false;
+    }
+  };
+
   const getInputClass = (fieldName, value) => {
     if (errors[fieldName]) return "field-input is-error";
-    if (value && String(value).trim() !== "") return "field-input is-filled";
-    return "field-input is-empty";
+    if (!value || String(value).trim() === "") return "field-input is-empty";
+    if (isFieldValid(fieldName, value)) return "field-input is-filled";
+    return "field-input"; 
   };
 
   return (
@@ -256,7 +306,6 @@ const handleSendCode = async () => {
             className={getInputClass("email", formData.email)}
             value={formData.email}
             onChange={handleChange}
-            disabled={verificationStatus === "verified"}
             style={{ 
               backgroundColor: verificationStatus === "verified" ? "rgba(46, 125, 50, 0.05)" : "transparent",
               borderColor: verificationStatus === "verified" ? "#2e7d32" : ""
@@ -303,6 +352,7 @@ const handleSendCode = async () => {
                   value={data}
                   onChange={(e) => handleCodeChange(e.target, index)}
                   onKeyDown={(e) => handleCodeKeyDown(e, index)}
+                  onPaste={handleCodePaste}
                   onFocus={(e) => e.target.select()}
                   style={{
                     width: "36px", height: "45px", fontSize: "1.2rem", textAlign: "center",
