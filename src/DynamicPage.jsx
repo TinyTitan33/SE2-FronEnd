@@ -35,6 +35,8 @@ function DynamicPage({
   const navigate = useNavigate();
   const [form, setForm] = useState({});
   const [errors, setErrors] = useState({});
+  // Track uploading state to prevent premature submission
+  const [uploadingFields, setUploadingFields] = useState({});
 
   const sortedFields = [...pageData.fields].sort((a, b) => a.order_field - b.order_field);
   const getFieldKey = (field) => `p${pageData.order_page}_f${field.order_field}`;
@@ -93,7 +95,6 @@ function DynamicPage({
     const isEmpty = val === "" || val === undefined || val === null || (Array.isArray(val) && val.length === 0) || (field.type === 'checkbox' && !field.options && val === false);
     if (isEmpty) return "is-empty";
     
-    // Check specific validity criteria based on field type
     let isValid = true;
     if (field.type === "text" || field.type === "textarea") {
       if (String(val).trim().length < 3) isValid = false;
@@ -206,15 +207,72 @@ function DynamicPage({
           </div>
         );
       case "fileUpload":
-        return <input type="file" style={{ color: 'var(--text-main)' }} onChange={(e) => handleChange(key, e.target.files[0] ? e.target.files[0].name : "")} />;
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <input 
+              type="file" 
+              accept="image/*"
+              style={{ color: 'var(--text-main)' }} 
+              onChange={async (e) => {
+                const file = e.target.files[0];
+                if (!file) {
+                  handleChange(key, "");
+                  return;
+                }
+
+                // Activate uploading state
+                setUploadingFields(prev => ({ ...prev, [key]: true }));
+
+                const formData = new FormData();
+                formData.append('images', file);
+
+                try {
+                  const response = await fetch('http://localhost:3000/upload', {
+                    method: 'POST',
+                    body: formData
+                  });
+                  
+                  const data = await response.json();
+                  
+                  if (data.success && data.files.length > 0) {
+                    // Save the successful MinIO URL to the form state
+                    handleChange(key, data.files[0].url);
+                  } else {
+                    setErrors(prev => ({ ...prev, [key]: data.message || "Upload failed" }));
+                    handleChange(key, "");
+                  }
+                } catch (error) {
+                  console.error('Upload error:', error);
+                  setErrors(prev => ({ ...prev, [key]: "Server connection error" }));
+                  handleChange(key, "");
+                } finally {
+                  // Turn off uploading state
+                  setUploadingFields(prev => ({ ...prev, [key]: false }));
+                }
+              }} 
+            />
+            {uploadingFields[key] && (
+              <span style={{ fontSize: '0.85rem', color: 'var(--primary-color)' }}>
+                Uploading image...
+              </span>
+            )}
+            {val && !uploadingFields[key] && String(val).startsWith('http') && (
+              <span style={{ fontSize: '0.85rem', color: '#4caf50' }}>
+                ✓ Image successfully uploaded
+              </span>
+            )}
+          </div>
+        );
       default: return null;
     }
   };
 
+  // Prevent moving to the next page if any image is currently uploading
+  const isCurrentlyUploading = Object.values(uploadingFields).some(status => status);
+
   return (
     <div className="form-container">
       
-      {/* INJECTED SUMMARY */}
       {isLastPage && (
         <div style={{ marginBottom: "35px" }}>
           <div className="review-header-container">
@@ -268,7 +326,6 @@ function DynamicPage({
         </div>
       )}
 
-      {/* STANDARD FIELDS RENDER */}
       {sortedFields.map(field => {
         const key = getFieldKey(field);
         return (
@@ -291,7 +348,12 @@ function DynamicPage({
           <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" /></svg>
           {UI_LABELS.back[lang]}
         </button>
-        <button onClick={() => validate() && (onUpdate(form), isLastPage ? onSubmit(form) : navigate(nextPath))} className="next-button">
+        <button 
+          onClick={() => validate() && (onUpdate(form), isLastPage ? onSubmit(form) : navigate(nextPath))} 
+          className="next-button"
+          disabled={isCurrentlyUploading}
+          style={{ opacity: isCurrentlyUploading ? 0.5 : 1 }}
+        >
           {isLastPage ? UI_LABELS.submit[lang] : UI_LABELS.next[lang]}
         </button>
       </div>

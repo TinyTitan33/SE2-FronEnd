@@ -182,6 +182,10 @@ function AppContent() {
     setFinalPayload(payload); 
 
     // --- DEMO PURPOSES: DOWNLOAD JSON ---
+
+
+    /* < REMOVE THIS LINE TO ENABLE AUTOMATIC DOWNLAOD OF JSON
+
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -191,6 +195,9 @@ function AppContent() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+
+    REMOVE THIS LINE TO ENABLE AUTOMATIC DOWNLAOD OF JSON >*/
+
 
     // --- API POST CALL ---
     try {
