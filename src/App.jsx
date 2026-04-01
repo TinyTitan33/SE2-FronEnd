@@ -123,7 +123,7 @@ function AppContent() {
     const productId = selectedProduct.db_id || null;
 
     const payload = {
-      campaign_db_id: campaignDbId,  // <- here use the state
+      campaign_db_id: Number(campaignDbId),  // Force this to be a number
       first_name: completeData.first_name,
       last_name: completeData.last_name,
       email: completeData.email,
@@ -138,39 +138,43 @@ function AppContent() {
 
     dynamicPages.forEach((page) => {
       [...page.fields].sort((a, b) => a.order_field - b.order_field).forEach((field) => {
-        if (field.type === "info") return; 
+        // Exclude info and file uploads from the main flex array
+        if (field.type === "info" || field.type === "fileUpload") return; 
         
         const key = `p${page.order_page}_f${field.order_field}`;
+        
+        // ALWAYS capture the NPS keys, even if the user skips it
+        if (field.type === "nps") {
+          npsData = {
+            nps_question: field.label["en"], 
+            nps_value: completeData[key] !== undefined ? completeData[key] : null,
+            nps_max: 10,
+            nps_min: 0
+          };
+          return; // Skip adding it to the standard flex array
+        }
+
         if (completeData[key] !== undefined) {
-          if (field.type === "nps") {
-            npsData = {
-              nps_question: field.label["en"], 
-              nps_value: completeData[key],
-              nps_max: 10,
-              nps_min: 0
-            };
-          } else {
-            let finalAnswer = completeData[key];
-            if (field.options) {
-              if (Array.isArray(finalAnswer)) {
-                finalAnswer = finalAnswer.map(val => {
-                  const option = field.options.find(opt => opt.value === val);
-                  return option ? option.label.en : val;
-                });
-              } else {
-                const option = field.options.find(opt => opt.value === finalAnswer);
-                if (option) finalAnswer = option.label.en;
-              }
+          let finalAnswer = completeData[key];
+          if (field.options) {
+            if (Array.isArray(finalAnswer)) {
+              finalAnswer = finalAnswer.map(val => {
+                const option = field.options.find(opt => opt.value === val);
+                return option ? option.label.en : val;
+              });
+            } else {
+              const option = field.options.find(opt => opt.value === finalAnswer);
+              if (option) finalAnswer = option.label.en;
             }
-            if (field.type === "number" && finalAnswer !== "" && finalAnswer !== undefined) {
-              finalAnswer = Number(finalAnswer);
-            }
-            payload.flex.push({
-              order: flexOrderCounter++, 
-              question: field.label["en"],
-              answer: finalAnswer
-            });
           }
+          if (field.type === "number" && finalAnswer !== "" && finalAnswer !== undefined) {
+            finalAnswer = Number(finalAnswer);
+          }
+          payload.flex.push({
+            order: flexOrderCounter++, 
+            question: field.label["en"],
+            answer: finalAnswer
+          });
         }
       });
     });
@@ -180,24 +184,6 @@ function AppContent() {
     }
     
     setFinalPayload(payload); 
-
-    // --- DEMO PURPOSES: DOWNLOAD JSON ---
-
-
-    /* < REMOVE THIS LINE TO ENABLE AUTOMATIC DOWNLAOD OF JSON
-
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `f2b_payload_campaign_${b2fData.campaign_db_id}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    REMOVE THIS LINE TO ENABLE AUTOMATIC DOWNLAOD OF JSON >*/
-
 
     // --- API POST CALL ---
     try {
@@ -210,14 +196,44 @@ function AppContent() {
       });
 
       if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}`);
+        // Read the actual error text from the backend so we aren't guessing
+        const errorText = await response.text();
+        throw new Error(`400 Bad Request - Backend says: ${errorText}`);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 800)); // Simulated Delay
+      // Read JSON to get the ID for linking
+      const resultData = await response.json();
+      const submissionId = resultData?.id_submission;
 
-      // Clear localStorage after successful submission
+      // Gather up all files across all steps
+      const uploadedFiles = [];
+      dynamicPages.forEach(page => {
+        page.fields.filter(f => f.type === "fileUpload").forEach(f => {
+          const key = `p${page.order_page}_f${f.order_field}`;
+          const urls = completeData[key];
+          if (Array.isArray(urls)) {
+            urls.forEach(url => uploadedFiles.push({ url }));
+          }
+        });
+      });
+
+      // Fire off the separate API call to link files to this submission
+      if (uploadedFiles.length > 0 && submissionId) {
+        const fileLinkPayload = {
+          id_submission: submissionId,
+          files: uploadedFiles
+        };
+
+        await fetch("/api/webhook/link-files", { 
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(fileLinkPayload)
+        });
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 800));
+
       localStorage.removeItem("campaignDbId");
-
       setIsSubmitted(true);
     } catch (error) {
       console.error("Submission Error:", error);
@@ -267,7 +283,8 @@ function AppContent() {
           return opt ? opt.label[lang] : v;
         }).join(", ");
       } else {
-        displayValue = value.join(", ");
+        // Fallback for arrays (like our new file URLs)
+        displayValue = value.map(v => typeof v === 'string' ? v.split('/').pop() : v).join(", ");
       }
     } else if (fieldObj?.options) {
       const opt = fieldObj.options.find(o => o.value === value);

@@ -46,7 +46,7 @@ function DynamicPage({
     sortedFields.forEach(field => {
       const key = getFieldKey(field);
       if (existingData[key] !== undefined) initialData[key] = existingData[key];
-      else initialData[key] = (field.type === 'checkbox' && !field.options) ? false : (field.type === 'checkbox' ? [] : "");
+      else initialData[key] = (field.type === 'checkbox' && !field.options) ? false : (field.type === 'checkbox' || field.type === 'fileUpload' ? [] : "");
     });
     setForm(initialData);
     setErrors({});
@@ -211,20 +211,18 @@ function DynamicPage({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <input 
               type="file" 
-              accept="image/*"
+              multiple 
               style={{ color: 'var(--text-main)' }} 
               onChange={async (e) => {
-                const file = e.target.files[0];
-                if (!file) {
-                  handleChange(key, "");
-                  return;
-                }
+                // 1. Grab the target IMMEDIATELY before doing any async work
+                const inputTarget = e.target; 
+                const files = Array.from(inputTarget.files);
+                if (!files.length) return;
 
-                // Activate uploading state
                 setUploadingFields(prev => ({ ...prev, [key]: true }));
 
                 const formData = new FormData();
-                formData.append('images', file);
+                files.forEach(file => formData.append('images', file));
 
                 try {
                   const response = await fetch('http://localhost:3000/upload', {
@@ -234,32 +232,42 @@ function DynamicPage({
                   
                   const data = await response.json();
                   
-                  if (data.success && data.files.length > 0) {
-                    // Save the successful MinIO URL to the form state
-                    handleChange(key, data.files[0].url);
+                  // 2. Extra safety checks on the response data
+                  if (data.success && data.files && data.files.length > 0) {
+                    const existingUrls = Array.isArray(val) ? val : [];
+                    // Fallback to a safe string if f.url is somehow missing
+                    const newUrls = data.files.map(f => f.url || f.name || "unknown-file");
+                    handleChange(key, [...existingUrls, ...newUrls]);
                   } else {
                     setErrors(prev => ({ ...prev, [key]: data.message || "Upload failed" }));
-                    handleChange(key, "");
                   }
                 } catch (error) {
                   console.error('Upload error:', error);
                   setErrors(prev => ({ ...prev, [key]: "Server connection error" }));
-                  handleChange(key, "");
                 } finally {
-                  // Turn off uploading state
                   setUploadingFields(prev => ({ ...prev, [key]: false }));
+                  // 3. Use the safely stored reference to clear the input
+                  inputTarget.value = null; 
                 }
               }} 
             />
+            
             {uploadingFields[key] && (
               <span style={{ fontSize: '0.85rem', color: 'var(--primary-color)' }}>
-                Uploading image...
+                Uploading files...
               </span>
             )}
-            {val && !uploadingFields[key] && String(val).startsWith('http') && (
-              <span style={{ fontSize: '0.85rem', color: '#4caf50' }}>
-                ✓ Image successfully uploaded
-              </span>
+            
+            {Array.isArray(val) && val.length > 0 && !uploadingFields[key] && (
+              <div style={{ fontSize: '0.85rem', color: '#4caf50', marginTop: '4px' }}>
+                <div style={{ marginBottom: '4px', fontWeight: 'bold' }}>✓ Successfully uploaded:</div>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  {val.map((url, i) => (
+                    // 4. Safe split in case url isn't a standard string
+                    <li key={i}>{typeof url === 'string' ? url.split('/').pop() : 'Attached file'}</li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         );
@@ -267,7 +275,7 @@ function DynamicPage({
     }
   };
 
-  // Prevent moving to the next page if any image is currently uploading
+  // Prevent moving to the next page if any file is currently uploading
   const isCurrentlyUploading = Object.values(uploadingFields).some(status => status);
 
   return (
@@ -338,7 +346,11 @@ function DynamicPage({
             {field.type === "info" && <p style={{ color: 'var(--text-main)', marginBottom: '10px' }}>{field.label[lang]}</p>}
             {field.helpText && <small className="help-text" style={{ marginBottom: "5px", display: "block" }}>{field.helpText[lang]}</small>}
             {renderField(field)}
-            {errors[key] && <p className="error-text">{UI_LABELS[errors[key]][lang]}</p>}
+            {errors[key] && (
+  <p className="error-text">
+    {UI_LABELS[errors[key]] ? UI_LABELS[errors[key]][lang] : errors[key]}
+  </p>
+)}
           </div>
         );
       })}
